@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   checkBackendConnection,
@@ -11,11 +12,16 @@ import {
 } from "../../lib/api";
 
 export default function Home() {
+  /*Algo del middleware*/
+  const router = useRouter(); 
+
+
   const [message, setMessage] = useState("Comprobando conexión...");
   const [status, setStatus] = useState("loading");
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
+  
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -48,6 +54,18 @@ export default function Home() {
       });
   }, []);
 
+  /*Logout*/
+  async function handleLogout() {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      router.push("/login");
+    }
+  }
+  
   function resetForm() {
     setName("");
     setDescription("");
@@ -143,9 +161,19 @@ export default function Home() {
           InventarioPro
         </h1>
 
-        <span className="text-sm text-slate-500">
-          Plataforma SaaS para MicroPyMEs
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-slate-500">
+            Plataforma SaaS para MicroPyMEs
+          </span>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </header>
 
       <section className="mx-auto max-w-6xl px-8 py-12">
