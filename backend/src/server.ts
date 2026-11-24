@@ -29,13 +29,37 @@ app.get("/api/health", (_req, res) => {
 // MÓDULO DE PRODUCTOS
 // =====================================
 
-const products = [
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  minStock: number; // si stock <= minStock se activa la alerta
+}
+
+const DEFAULT_MIN_STOCK = 5;
+
+function isLowStock(product: Product): boolean {
+  return product.stock <= product.minStock;
+}
+
+// minStock es opcional; si viene, debe ser un entero >= 0.
+function isValidMinStock(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (typeof value === "number" && Number.isInteger(value) && value >= 0)
+  );
+}
+
+const products: Product[] = [
   {
     id: 1,
     name: "Laptop Lenovo",
     description: "Laptop para uso empresarial",
     price: 2500000,
     stock: 10,
+    minStock: 3,
   },
   {
     id: 2,
@@ -43,6 +67,7 @@ const products = [
     description: "Mouse óptico inalámbrico",
     price: 65000,
     stock: 25,
+    minStock: 5,
   },
   {
     id: 3,
@@ -50,21 +75,22 @@ const products = [
     description: "Teclado mecánico para oficina",
     price: 180000,
     stock: 15,
+    minStock: 15, // para probar la alerta (stock <= minStock)
   },
 ];
 
 // Consultar productos.
-app.get("/api/products", (_req, res) => {
+app.get("/api/products/low-stock", (_req, res) => {
   res.status(200).json({
     status: "ok",
-    message: "Listado de productos",
-    data: products,
+    message: "Productos con stock bajo",
+    data: products.filter(isLowStock),
   });
 });
 
 // Registrar un nuevo producto.
 app.post("/api/products", (req, res) => {
-  const { name, description, price, stock } = req.body;
+  const { name, description, price, stock, minStock } = req.body;
 
   if (
     typeof name !== "string" ||
@@ -76,7 +102,8 @@ app.post("/api/products", (req, res) => {
     price <= 0 ||
     typeof stock !== "number" ||
     !Number.isInteger(stock) ||
-    stock < 0
+    stock < 0 ||
+    !isValidMinStock(minStock)
   ) {
     return res.status(400).json({
       status: "error",
@@ -84,13 +111,14 @@ app.post("/api/products", (req, res) => {
     });
   }
 
-  const newProduct = {
-    id: Math.max(0, ...products.map((product) => product.id)) + 1,
-    name: name.trim(),
-    description: description.trim(),
-    price,
-    stock,
-  };
+  const newProduct: Product = {
+  id: Math.max(0, ...products.map((product) => product.id)) + 1,
+  name: name.trim(),
+  description: description.trim(),
+  price,
+  stock,
+  minStock: minStock ?? DEFAULT_MIN_STOCK,
+};
 
   products.push(newProduct);
 
@@ -104,7 +132,7 @@ app.post("/api/products", (req, res) => {
 // Actualizar un producto existente.
 app.put("/api/products/:id", (req, res) => {
   const id = Number(req.params.id);
-  const { name, description, price, stock } = req.body;
+  const { name, description, price, stock, minStock } = req.body;
 
   const productIndex = products.findIndex(
     (product) => product.id === id
@@ -127,7 +155,8 @@ app.put("/api/products/:id", (req, res) => {
     price <= 0 ||
     typeof stock !== "number" ||
     !Number.isInteger(stock) ||
-    stock < 0
+    stock < 0 ||
+    !isValidMinStock(minStock)
   ) {
     return res.status(400).json({
       status: "error",
@@ -135,13 +164,14 @@ app.put("/api/products/:id", (req, res) => {
     });
   }
 
-  const updatedProduct = {
-    id,
-    name: name.trim(),
-    description: description.trim(),
-    price,
-    stock,
-  };
+  const updatedProduct: Product = {
+  id,
+  name: name.trim(),
+  description: description.trim(),
+  price,
+  stock,
+  minStock: minStock ?? products[productIndex].minStock,
+};
 
   products[productIndex] = updatedProduct;
 
@@ -149,6 +179,29 @@ app.put("/api/products/:id", (req, res) => {
     status: "ok",
     message: "Producto actualizado correctamente",
     data: updatedProduct,
+  });
+});
+// Eliminar un producto existente.
+app.delete("/api/products/:id", (req, res) => {
+  const id = Number(req.params.id);
+
+  const productIndex = products.findIndex(
+    (product) => product.id === id
+  );
+
+  if (productIndex === -1) {
+    return res.status(404).json({
+      status: "error",
+      message: "Producto no encontrado",
+    });
+  }
+
+  const deletedProduct = products.splice(productIndex, 1)[0];
+
+  return res.status(200).json({
+    status: "ok",
+    message: "Producto eliminado correctamente",
+    data: deletedProduct,
   });
 });
 // =====================================

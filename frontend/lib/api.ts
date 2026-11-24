@@ -7,6 +7,7 @@ export interface Product {
   description: string;
   price: number;
   stock: number;
+  minStock: number;
 }
 
 // Comprobar conexión con el backend.
@@ -75,12 +76,28 @@ export async function updateProduct(
         description: product.description,
         price: product.price,
         stock: product.stock,
+        minStock: product.minStock,
       }),
     }
   );
 
   if (!response.ok) {
     throw new Error("No se pudo actualizar el producto");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}
+
+// Eliminar un producto del inventario.
+export async function deleteProduct(id: number): Promise<Product> {
+  const response = await fetch(`${API_URL}/api/products/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo eliminar el producto");
   }
 
   const result = await response.json();
