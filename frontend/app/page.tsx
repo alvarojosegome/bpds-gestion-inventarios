@@ -16,6 +16,7 @@ export default function Home() {
   const [status, setStatus] = useState("loading");
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -24,6 +25,16 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [formMessage, setFormMessage] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  // Filtrar productos por nombre o descripción.
+  const filteredProducts = products.filter((product) => {
+    const search = searchTerm.trim().toLowerCase();
+
+    return (
+      product.name.toLowerCase().includes(search) ||
+      product.description.toLowerCase().includes(search)
+    );
+  });
 
   useEffect(() => {
     checkBackendConnection()
@@ -329,11 +340,34 @@ export default function Home() {
             Productos disponibles
           </h3>
 
+          {/* Buscador de productos */}
+          <div className="mb-6">
+            <label
+              htmlFor="search"
+              className="mb-2 block font-medium"
+            >
+              Buscar productos
+            </label>
+
+            <input
+              id="search"
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Buscar por nombre o descripción..."
+              className="w-full rounded-lg border p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
           {loadingProducts ? (
             <p className="text-slate-500">Cargando productos...</p>
           ) : products.length === 0 ? (
             <p className="text-slate-500">
               No hay productos registrados.
+            </p>
+          ) : filteredProducts.length === 0 ? (
+            <p className="text-slate-500">
+              No se encontraron productos que coincidan con la búsqueda.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -349,7 +383,7 @@ export default function Home() {
                 </thead>
 
                 <tbody>
-                  {products.map((product) => (
+                  {filteredProducts.map((product) => (
                     <tr key={product.id} className="border-b">
                       <td className="p-3 font-semibold">
                         {product.name}
