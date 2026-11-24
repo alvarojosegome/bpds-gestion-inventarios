@@ -1,10 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   checkBackendConnection,
   getProducts,
+  createProduct,
   type Product,
 } from "../lib/api";
 
@@ -13,6 +14,13 @@ export default function Home() {
   const [status, setStatus] = useState("loading");
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [formMessage, setFormMessage] = useState("");
 
   useEffect(() => {
     checkBackendConnection()
@@ -37,6 +45,52 @@ export default function Home() {
         setLoadingProducts(false);
       });
   }, []);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormMessage("");
+
+    const numericPrice = Number(price);
+    const numericStock = Number(stock);
+
+    if (
+      !name.trim() ||
+      !description.trim() ||
+      !Number.isFinite(numericPrice) ||
+      numericPrice <= 0 ||
+      !Number.isInteger(numericStock) ||
+      numericStock < 0
+    ) {
+      setFormMessage("Verifica los datos ingresados.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const newProduct = await createProduct({
+        name: name.trim(),
+        description: description.trim(),
+        price: numericPrice,
+        stock: numericStock,
+      });
+
+      setProducts((currentProducts) => [
+        ...currentProducts,
+        newProduct,
+      ]);
+
+      setName("");
+      setDescription("");
+      setPrice("");
+      setStock("");
+      setFormMessage("¡Producto registrado correctamente!");
+    } catch {
+      setFormMessage("No se pudo registrar el producto.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-800">
@@ -82,19 +136,103 @@ export default function Home() {
           </div>
         </div>
 
+        <section className="mb-10 rounded-xl border bg-white p-8 shadow-sm">
+          <h3 className="mb-6 text-2xl font-bold">
+            Registrar nuevo producto
+          </h3>
+
+          <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
+            <div>
+              <label htmlFor="name" className="mb-2 block font-medium">
+                Nombre del producto
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Ej. Monitor Samsung"
+                required
+                className="w-full rounded-lg border p-3"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="description" className="mb-2 block font-medium">
+                Descripción
+              </label>
+              <input
+                id="description"
+                type="text"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Descripción del producto"
+                required
+                className="w-full rounded-lg border p-3"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="price" className="mb-2 block font-medium">
+                Precio (COP)
+              </label>
+              <input
+                id="price"
+                type="number"
+                min="1"
+                step="1"
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
+                placeholder="Ej. 850000"
+                required
+                className="w-full rounded-lg border p-3"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="stock" className="mb-2 block font-medium">
+                Cantidad disponible
+              </label>
+              <input
+                id="stock"
+                type="number"
+                min="0"
+                step="1"
+                value={stock}
+                onChange={(event) => setStock(event.target.value)}
+                placeholder="Ej. 20"
+                required
+                className="w-full rounded-lg border p-3"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? "Registrando..." : "Registrar producto"}
+              </button>
+            </div>
+
+            {formMessage && (
+              <p className="md:col-span-2 text-sm font-medium">
+                {formMessage}
+              </p>
+            )}
+          </form>
+        </section>
+
         <section className="rounded-xl border bg-white p-8 shadow-sm">
           <h3 className="mb-6 text-2xl font-bold">
             Productos disponibles
           </h3>
 
           {loadingProducts ? (
-            <p className="text-slate-500">
-              Cargando productos...
-            </p>
+            <p className="text-slate-500">Cargando productos...</p>
           ) : products.length === 0 ? (
-            <p className="text-slate-500">
-              No hay productos registrados.
-            </p>
+            <p className="text-slate-500">No hay productos registrados.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -110,14 +248,8 @@ export default function Home() {
                 <tbody>
                   {products.map((product) => (
                     <tr key={product.id} className="border-b">
-                      <td className="p-3 font-semibold">
-                        {product.name}
-                      </td>
-
-                      <td className="p-3">
-                        {product.description}
-                      </td>
-
+                      <td className="p-3 font-semibold">{product.name}</td>
+                      <td className="p-3">{product.description}</td>
                       <td className="p-3">
                         {product.price.toLocaleString("es-CO", {
                           style: "currency",
@@ -125,10 +257,7 @@ export default function Home() {
                           maximumFractionDigits: 0,
                         })}
                       </td>
-
-                      <td className="p-3">
-                        {product.stock} unidades
-                      </td>
+                      <td className="p-3">{product.stock} unidades</td>
                     </tr>
                   ))}
                 </tbody>

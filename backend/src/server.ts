@@ -28,7 +28,6 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-
 // =====================================
 // MÓDULO DE PRODUCTOS
 // =====================================
@@ -66,6 +65,44 @@ app.get("/api/products", (_req, res) => {
   });
 });
 
+// Registrar un nuevo producto.
+app.post("/api/products", (req, res) => {
+  const { name, description, price, stock } = req.body;
+
+  if (
+    typeof name !== "string" ||
+    !name.trim() ||
+    typeof description !== "string" ||
+    !description.trim() ||
+    typeof price !== "number" ||
+    !Number.isFinite(price) ||
+    price <= 0 ||
+    typeof stock !== "number" ||
+    !Number.isInteger(stock) ||
+    stock < 0
+  ) {
+    return res.status(400).json({
+      status: "error",
+      message: "Los datos del producto no son válidos",
+    });
+  }
+
+  const newProduct = {
+    id: Math.max(0, ...products.map((product) => product.id)) + 1,
+    name: name.trim(),
+    description: description.trim(),
+    price,
+    stock,
+  };
+
+  products.push(newProduct);
+
+  return res.status(201).json({
+    status: "ok",
+    message: "Producto registrado correctamente",
+    data: newProduct,
+  });
+});
 
 // =====================================
 // INICIO DEL SERVIDOR
