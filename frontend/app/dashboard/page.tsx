@@ -113,6 +113,59 @@ export default function Home() {
     setEditingId(null);
   }
 
+    // Exportar el inventario actual a un archivo CSV (compatible con Excel en español).
+  function handleExportCSV() {
+    if (products.length === 0) {
+      alert("No hay productos en el inventario para exportar.");
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Nombre",
+      "Descripción",
+      "Precio (COP)",
+      "Stock Actual",
+      "Stock Mínimo",
+      "Estado",
+    ];
+
+    const rows = products.map((product) => {
+      const estado =
+        product.stock === 0
+          ? "Agotado"
+          : product.stock <= product.minStock
+          ? "Stock bajo"
+          : "Disponible";
+
+      return [
+        product.id,
+        product.name.replace(/;/g, ","),
+        product.description.replace(/;/g, ","),
+        product.price,
+        product.stock,
+        product.minStock,
+        estado,
+      ].join(";");
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `inventario_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+
   // Preparar el formulario para editar un producto.
   function handleEdit(product: Product) {
     setEditingId(product.id);
@@ -434,7 +487,19 @@ export default function Home() {
         </section>
 
         <section className="rounded-xl border bg-white p-8 shadow-sm">
-          <h3 className="mb-6 text-2xl font-bold">Productos disponibles</h3>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <h3 className="text-2xl font-bold">
+              Productos disponibles
+            </h3>
+
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+            >
+              Exportar CSV
+            </button>
+          </div>
 
           {/* Buscador de productos */}
           <div className="mb-6">
