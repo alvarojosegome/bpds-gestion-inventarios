@@ -154,6 +154,29 @@ app.put("/api/products/:id", (req, res) => {
     data: updatedProduct,
   });
 });
+// Eliminar un producto existente.
+app.delete("/api/products/:id", (req, res) => {
+  const id = Number(req.params.id);
+
+  const productIndex = products.findIndex(
+    (product) => product.id === id
+  );
+
+  if (productIndex === -1) {
+    return res.status(404).json({
+      status: "error",
+      message: "Producto no encontrado",
+    });
+  }
+
+  const deletedProduct = products.splice(productIndex, 1)[0];
+
+  return res.status(200).json({
+    status: "ok",
+    message: "Producto eliminado correctamente",
+    data: deletedProduct,
+  });
+});
 // =====================================
 // INICIO DEL SERVIDOR
 // =====================================

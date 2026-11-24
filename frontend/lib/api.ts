@@ -87,3 +87,18 @@ export async function updateProduct(
 
   return result.data;
 }
+
+// Eliminar un producto del inventario.
+export async function deleteProduct(id: number): Promise<Product> {
+  const response = await fetch(`${API_URL}/api/products/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo eliminar el producto");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}
