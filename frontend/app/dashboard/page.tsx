@@ -487,67 +487,80 @@ export default function Home() {
               No se encontraron productos que coincidan con la búsqueda.
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b text-slate-500">
-                    <th className="p-3">Producto</th>
-                    <th className="p-3">Descripción</th>
-                    <th className="p-3">Precio</th>
-                    <th className="p-3">Stock</th>
-                    <th className="p-3">Estado</th>
-                    <th className="p-3">Acciones</th>
-                  </tr>
-                </thead>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredProducts.map((product) => {
+                const stockStatus = getStockStatus(product);
 
-                <tbody>
-                  {filteredProducts.map((product) => (
-                    <tr key={product.id} className="border-b">
-                      <td className="p-3 font-semibold">{product.name}</td>
+                return (
+                  <article
+                    key={product.id}
+                    className="flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm"
+                  >
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        loading="lazy"
+                        className="h-32 w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-32 w-full flex-col items-center justify-center gap-1 bg-slate-100 text-slate-400">
+                        <span className="text-2xl" aria-hidden="true">
+                          🖼️
+                        </span>
+                        <span className="text-xs">Sin imagen</span>
+                      </div>
+                    )}
 
-                      <td className="p-3">{product.description}</td>
+                    <div className="flex flex-1 flex-col p-4">
+                      <h4 className="font-semibold text-slate-900">
+                        {product.name}
+                      </h4>
+                      <p className="mb-3 text-sm text-slate-500">
+                        {product.description}
+                      </p>
 
-                      <td className="p-3">
+                      <p className="mb-2 text-lg font-bold text-slate-900">
                         {product.price.toLocaleString("es-CO", {
                           style: "currency",
                           currency: "COP",
                           maximumFractionDigits: 0,
                         })}
-                      </td>
+                      </p>
 
-                      <td className="p-3">{product.stock} unidades</td>
-
-                      <td className="p-3">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${getStockStatus(product).className}`}
-                        >
-                          {getStockStatus(product).label}
+                      <div className="mb-4 flex items-center justify-between gap-2">
+                        <span className="text-sm text-slate-600">
+                          {product.stock} unidades
+                          {product.stock <= product.minStock &&
+                            ` · mín. ${product.minStock}`}
                         </span>
-                      </td>
+                        <span
+                          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${stockStatus.className}`}
+                        >
+                          {stockStatus.label}
+                        </span>
+                      </div>
 
-                      <td className="p-3">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(product)}
-                            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
-                          >
-                            Editar
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(product.id)}
-                            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      <div className="mt-auto flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(product)}
+                          className="flex-1 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(product.id)}
+                          className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
