@@ -305,7 +305,7 @@ export default function Home() {
       <header className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-blue-950 to-blue-800 text-white shadow-xl">
         <div className="absolute -right-20 -top-32 h-80 w-80 rounded-full bg-blue-400/20 blur-3xl" />
         <div className="absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
-
+         
         <div className="relative mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-6 lg:px-10">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-2xl shadow-inner ring-1 ring-white/20">
@@ -664,35 +664,9 @@ export default function Home() {
           </form>
         </section>
 
-        <section className="rounded-xl border bg-white p-8 shadow-sm">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <h3 className="text-2xl font-bold">
-              Productos disponibles
-            </h3>
+        
 
-            <button
-              type="button"
-              onClick={handleExportCSV}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
-            >
-              Exportar CSV
-            </button>
-          </div>
-
-          {/* Buscador de productos */}
-          <div className="mb-6">
-            <label htmlFor="search" className="mb-2 block font-medium">
-              Buscar productos
-            </label>
-
-            <input
-              id="search"
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar por nombre o descripción..."
-              className="w-full rounded-lg border p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
+            
         {/* Inventario */}
         <section
           id="inventario"
@@ -707,9 +681,19 @@ export default function Home() {
                 Consulta y administra todos tus productos registrados.
               </p>
             </div>
-            <span className="w-fit rounded-full bg-blue-50 px-4 py-2 text-xs font-bold text-blue-700">
-              {products.length} productos
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="w-fit rounded-full bg-blue-50 px-4 py-2 text-xs font-bold text-blue-700">
+                {products.length} productos
+              </span>
+
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"
+              >
+                Exportar CSV
+              </button>
+            </div>
           </div>
 
           <div className="p-6">
