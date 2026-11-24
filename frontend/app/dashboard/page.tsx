@@ -11,6 +11,8 @@ import {
   type Product,
 } from "../../lib/api";
 
+import ImageSelector from "./ImageSelector";
+
 function getStockStatus(product: Product) {
   if (product.stock === 0) {
     return { label: "Agotado", className: "bg-red-100 text-red-700" };
@@ -39,6 +41,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [formMessage, setFormMessage] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
 
   // Filtrar productos por nombre o descripción.
   const filteredProducts = products.filter((product) => {
@@ -110,6 +113,7 @@ export default function Home() {
     setPrice("");
     setStock("");
     setMinStock("5");
+    setImageUrl("");
     setEditingId(null);
   }
 
@@ -121,6 +125,7 @@ export default function Home() {
     setPrice(String(product.price));
     setStock(String(product.stock));
     setMinStock(String(product.minStock));
+    setImageUrl(product.imageUrl ?? "");
     setFormMessage("");
 
     window.scrollTo({
@@ -190,6 +195,7 @@ export default function Home() {
           price: numericPrice,
           stock: numericStock,
           minStock: numericMinStock,
+          imageUrl,
         });
 
         setProducts((currentProducts) =>
@@ -207,6 +213,7 @@ export default function Home() {
           price: numericPrice,
           stock: numericStock,
           minStock: numericMinStock,
+          imageUrl: imageUrl || undefined,
         });
 
         setProducts((currentProducts) => [...currentProducts, newProduct]);
@@ -397,6 +404,11 @@ export default function Home() {
               />
             </div>
 
+            <ImageSelector
+              productName={name}
+              value={imageUrl}
+              onChange={setImageUrl}
+            />
             <div className="flex flex-wrap gap-3 md:col-span-2">
               <button
                 type="submit"
