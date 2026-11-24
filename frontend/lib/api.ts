@@ -7,6 +7,7 @@ export interface Product {
   description: string;
   price: number;
   stock: number;
+  minStock: number;
 }
 
 // Comprobar conexión con el backend.
@@ -75,6 +76,7 @@ export async function updateProduct(
         description: product.description,
         price: product.price,
         stock: product.stock,
+        minStock: product.minStock,
       }),
     }
   );
