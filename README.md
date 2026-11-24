@@ -154,6 +154,8 @@ cd bpds-gestion-inventarios
 ```bash
 cd frontend
 pnpm install
+npm install jsonwebtoken
+npm install -D @types/jsonwebtoken
 ```
 
 ### 6.3. Configurar variables de entorno
