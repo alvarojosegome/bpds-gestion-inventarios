@@ -8,6 +8,7 @@ export interface Product {
   price: number;
   stock: number;
   minStock: number;
+  imageUrl?: string;
 }
 
 // Comprobar conexión con el backend.
