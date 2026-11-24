@@ -1,6 +1,7 @@
 
 import express from "express";
 import cors from "cors";
+import authRouter from "./auth.js";
 
 
 // Cargar variables de entorno desde backend/.env (si existe).
@@ -17,13 +18,9 @@ const PORT = process.env.PORT || 4000;
 // CONFIGURACIÓN GENERAL
 // =====================================
 
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
-
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-  })
-);
+app.use("/auth", authRouter);
 
 // =====================================
 // RUTA DE COMPROBACIÓN
@@ -103,6 +100,15 @@ const products: Product[] = [
     minStock: 15, // para probar la alerta (stock <= minStock)
   },
 ];
+
+// Consultar todos los productos.
+app.get("/api/products", (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "Listado de productos",
+    data: products,
+  });
+});
 
 // Consultar productos.
 app.get("/api/products/low-stock", (_req, res) => {
