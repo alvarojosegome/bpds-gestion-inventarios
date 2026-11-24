@@ -11,6 +11,16 @@ import {
   type Product,
 } from "../lib/api";
 
+function getStockStatus(product: Product) {
+  if (product.stock === 0) {
+    return { label: "Agotado", className: "bg-red-100 text-red-700" };
+  }
+  if (product.stock <= product.minStock) {
+    return { label: "Stock bajo", className: "bg-amber-100 text-amber-700" };
+  }
+  return { label: "Disponible", className: "bg-green-100 text-green-700" };
+}
+
 export default function Home() {
   const [message, setMessage] = useState("Comprobando conexión...");
   const [status, setStatus] = useState("loading");
@@ -22,6 +32,7 @@ export default function Home() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
+  const [minStock, setMinStock] = useState("5");
   const [saving, setSaving] = useState(false);
   const [formMessage, setFormMessage] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -35,7 +46,9 @@ export default function Home() {
       product.description.toLowerCase().includes(search)
     );
   });
-
+  const lowStockProducts = products.filter(
+  (product) => product.stock <= product.minStock
+);
   useEffect(() => {
     checkBackendConnection()
       .then((data) => {
@@ -65,6 +78,7 @@ export default function Home() {
     setDescription("");
     setPrice("");
     setStock("");
+    setMinStock("5");
     setEditingId(null);
   }
 
@@ -75,6 +89,7 @@ export default function Home() {
     setDescription(product.description);
     setPrice(String(product.price));
     setStock(String(product.stock));
+    setMinStock(String(product.minStock));
     setFormMessage("");
 
     window.scrollTo({
@@ -116,16 +131,19 @@ export default function Home() {
     setFormMessage("");
 
     const numericPrice = Number(price);
-    const numericStock = Number(stock);
+const numericStock = Number(stock);
+const numericMinStock = Number(minStock); // nuevo
 
-    if (
-      !name.trim() ||
-      !description.trim() ||
-      !Number.isFinite(numericPrice) ||
-      numericPrice <= 0 ||
-      !Number.isInteger(numericStock) ||
-      numericStock < 0
-    ) {
+if (
+  !name.trim() ||
+  !description.trim() ||
+  !Number.isFinite(numericPrice) ||
+  numericPrice <= 0 ||
+  !Number.isInteger(numericStock) ||
+  numericStock < 0 ||
+  !Number.isInteger(numericMinStock) || // nuevo
+  numericMinStock < 0 // nuevo
+) {
       setFormMessage("Verifica los datos ingresados.");
       return;
     }
@@ -140,6 +158,7 @@ export default function Home() {
           description: description.trim(),
           price: numericPrice,
           stock: numericStock,
+          minStock: numericMinStock,
         });
 
         setProducts((currentProducts) =>
@@ -156,6 +175,7 @@ export default function Home() {
           description: description.trim(),
           price: numericPrice,
           stock: numericStock,
+          minStock: numericMinStock,
         });
 
         setProducts((currentProducts) => [
@@ -284,7 +304,7 @@ export default function Home() {
 
             <div>
               <label htmlFor="stock" className="mb-2 block font-medium">
-                Cantidad disponible
+               Cantidad disponible
               </label>
               <input
                 id="stock"
@@ -298,7 +318,22 @@ export default function Home() {
                 className="w-full rounded-lg border p-3"
               />
             </div>
-
+            
+            <div>
+              <label htmlFor="minStock" className="mb-2 block font-medium">
+              Stock mínimo (alerta)
+              </label>
+              <input
+               id="minStock"
+               type="number"
+               min="0"
+               step="1"
+               value={minStock}
+              onChange={(event) => setMinStock(event.target.value)}
+              required
+              className="w-full rounded-lg border p-3"
+              />
+             </div>
             <div className="flex flex-wrap gap-3 md:col-span-2">
               <button
                 type="submit"
@@ -359,6 +394,21 @@ export default function Home() {
             />
           </div>
 
+          {lowStockProducts.length > 0 && (
+  <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-5">
+    <p className="font-bold text-amber-800">
+      ⚠️ {lowStockProducts.length} producto(s) con stock bajo
+    </p>
+    <ul className="mt-2 list-disc pl-5 text-sm text-amber-800">
+      {lowStockProducts.map((product) => (
+        <li key={product.id}>
+          {product.name}: {product.stock} unidades (mínimo {product.minStock})
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
           {loadingProducts ? (
             <p className="text-slate-500">Cargando productos...</p>
           ) : products.length === 0 ? (
@@ -378,6 +428,7 @@ export default function Home() {
                     <th className="p-3">Descripción</th>
                     <th className="p-3">Precio</th>
                     <th className="p-3">Stock</th>
+                    <th className="p-3">Estado</th>
                     <th className="p-3">Acciones</th>
                   </tr>
                 </thead>
@@ -404,7 +455,15 @@ export default function Home() {
                       <td className="p-3">
                         {product.stock} unidades
                       </td>
-
+                      
+                      <td className="p-3">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${getStockStatus(product).className}`}
+                        >
+                          {getStockStatus(product).label}
+                        </span>
+                      </td>
+                      
                       <td className="p-3">
                         <div className="flex flex-wrap gap-2">
                           <button
