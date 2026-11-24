@@ -54,6 +54,16 @@ export default function Home() {
   const lowStockProducts = products.filter(
       (product) => product.stock <= product.minStock
   );
+  const totalProducts = products.length;
+
+  const outOfStockCount = products.filter(
+    (product) => product.stock === 0
+  ).length;
+
+  const inventoryValue = products.reduce(
+    (sum, product) => sum + product.price * product.stock,
+    0
+  );
   useEffect(() => {
     checkBackendConnection()
       .then((data) => {
@@ -242,6 +252,38 @@ if (
             <h3 className="mb-3 text-xl font-bold">Pedidos</h3>
             <p className="text-slate-600">
               Organiza y realiza seguimiento a los pedidos.
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-10 grid gap-4 md:grid-cols-4">
+          <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <p className="text-sm text-slate-500">Total de productos</p>
+            <p className="text-2xl font-bold">{totalProducts}</p>
+          </div>
+
+          <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <p className="text-sm text-slate-500">Valor del inventario</p>
+            <p className="text-2xl font-bold">
+              {inventoryValue.toLocaleString("es-CO", {
+                style: "currency",
+                currency: "COP",
+                maximumFractionDigits: 0,
+              })}
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <p className="text-sm text-slate-500">Con stock bajo</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {lowStockProducts.length}
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <p className="text-sm text-slate-500">Agotados</p>
+            <p className="text-2xl font-bold text-red-600">
+              {outOfStockCount}
             </p>
           </div>
         </div>
