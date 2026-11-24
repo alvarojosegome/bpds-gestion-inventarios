@@ -7,6 +7,7 @@ import {
   getProducts,
   createProduct,
   updateProduct,
+  deleteProduct,
   type Product,
 } from "../lib/api";
 
@@ -56,6 +57,7 @@ export default function Home() {
     setEditingId(null);
   }
 
+  // Preparar el formulario para editar un producto.
   function handleEdit(product: Product) {
     setEditingId(product.id);
     setName(product.name);
@@ -70,6 +72,34 @@ export default function Home() {
     });
   }
 
+  // Eliminar un producto del inventario.
+  async function handleDelete(id: number) {
+    const confirmed = window.confirm(
+      "¿Estás seguro de que deseas eliminar este producto?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteProduct(id);
+
+      setProducts((currentProducts) =>
+        currentProducts.filter((product) => product.id !== id)
+      );
+
+      if (editingId === id) {
+        resetForm();
+      }
+
+      setFormMessage("¡Producto eliminado correctamente!");
+    } catch {
+      setFormMessage("No se pudo eliminar el producto.");
+    }
+  }
+
+  // Registrar o actualizar un producto.
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormMessage("");
@@ -324,7 +354,11 @@ export default function Home() {
                       <td className="p-3 font-semibold">
                         {product.name}
                       </td>
-                      <td className="p-3">{product.description}</td>
+
+                      <td className="p-3">
+                        {product.description}
+                      </td>
+
                       <td className="p-3">
                         {product.price.toLocaleString("es-CO", {
                           style: "currency",
@@ -332,15 +366,29 @@ export default function Home() {
                           maximumFractionDigits: 0,
                         })}
                       </td>
-                      <td className="p-3">{product.stock} unidades</td>
+
                       <td className="p-3">
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(product)}
-                          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
-                        >
-                          Editar
-                        </button>
+                        {product.stock} unidades
+                      </td>
+
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(product)}
+                            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+                          >
+                            Editar
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(product.id)}
+                            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
