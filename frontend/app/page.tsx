@@ -2,11 +2,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { checkBackendConnection } from "../lib/api";
+import {
+  checkBackendConnection,
+  getProducts,
+  type Product,
+} from "../lib/api";
 
 export default function Home() {
   const [message, setMessage] = useState("Comprobando conexión...");
   const [status, setStatus] = useState("loading");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
   useEffect(() => {
     checkBackendConnection()
@@ -17,6 +23,18 @@ export default function Home() {
       .catch(() => {
         setMessage("No fue posible conectar con el backend.");
         setStatus("error");
+      });
+
+    getProducts()
+      .then((data) => {
+        setProducts(data);
+      })
+      .catch(() => {
+        setMessage("No fue posible cargar los productos.");
+        setStatus("error");
+      })
+      .finally(() => {
+        setLoadingProducts(false);
       });
   }, []);
 
@@ -32,8 +50,8 @@ export default function Home() {
         </span>
       </header>
 
-      <section className="mx-auto max-w-6xl px-8 py-20">
-        <div className="mb-12">
+      <section className="mx-auto max-w-6xl px-8 py-12">
+        <div className="mb-10">
           <p className="mb-3 font-semibold text-blue-600">
             GESTIÓN EMPRESARIAL
           </p>
@@ -48,29 +66,78 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="mb-10 grid gap-6 md:grid-cols-2">
           <div className="rounded-xl border bg-white p-8 shadow-sm">
-            <h3 className="mb-3 text-xl font-bold">
-              Inventario
-            </h3>
-
+            <h3 className="mb-3 text-xl font-bold">Inventario</h3>
             <p className="text-slate-600">
               Consulta y administra los productos de tu negocio.
             </p>
           </div>
 
           <div className="rounded-xl border bg-white p-8 shadow-sm">
-            <h3 className="mb-3 text-xl font-bold">
-              Pedidos
-            </h3>
-
+            <h3 className="mb-3 text-xl font-bold">Pedidos</h3>
             <p className="text-slate-600">
               Organiza y realiza seguimiento a los pedidos.
             </p>
           </div>
         </div>
 
-        <div className="mt-10 rounded-xl border bg-white p-6 shadow-sm">
+        <section className="rounded-xl border bg-white p-8 shadow-sm">
+          <h3 className="mb-6 text-2xl font-bold">
+            Productos disponibles
+          </h3>
+
+          {loadingProducts ? (
+            <p className="text-slate-500">
+              Cargando productos...
+            </p>
+          ) : products.length === 0 ? (
+            <p className="text-slate-500">
+              No hay productos registrados.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b text-slate-500">
+                    <th className="p-3">Producto</th>
+                    <th className="p-3">Descripción</th>
+                    <th className="p-3">Precio</th>
+                    <th className="p-3">Stock</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id} className="border-b">
+                      <td className="p-3 font-semibold">
+                        {product.name}
+                      </td>
+
+                      <td className="p-3">
+                        {product.description}
+                      </td>
+
+                      <td className="p-3">
+                        {product.price.toLocaleString("es-CO", {
+                          style: "currency",
+                          currency: "COP",
+                          maximumFractionDigits: 0,
+                        })}
+                      </td>
+
+                      <td className="p-3">
+                        {product.stock} unidades
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <div className="mt-8 rounded-xl border bg-white p-6 shadow-sm">
           <h3 className="mb-3 font-bold">
             Estado de conexión con el backend
           </h3>

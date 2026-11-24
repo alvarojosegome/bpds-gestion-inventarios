@@ -28,18 +28,44 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+
 // =====================================
 // MÓDULO DE PRODUCTOS
 // =====================================
+
+const products = [
+  {
+    id: 1,
+    name: "Laptop Lenovo",
+    description: "Laptop para uso empresarial",
+    price: 2500000,
+    stock: 10,
+  },
+  {
+    id: 2,
+    name: "Mouse inalámbrico",
+    description: "Mouse óptico inalámbrico",
+    price: 65000,
+    stock: 25,
+  },
+  {
+    id: 3,
+    name: "Teclado mecánico",
+    description: "Teclado mecánico para oficina",
+    price: 180000,
+    stock: 15,
+  },
+];
 
 // Consultar productos.
 app.get("/api/products", (_req, res) => {
   res.status(200).json({
     status: "ok",
     message: "Listado de productos",
-    data: [],
+    data: products,
   });
 });
+
 
 // =====================================
 // INICIO DEL SERVIDOR
