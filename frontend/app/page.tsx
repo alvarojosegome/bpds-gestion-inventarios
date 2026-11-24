@@ -6,6 +6,7 @@ import {
   checkBackendConnection,
   getProducts,
   createProduct,
+  updateProduct,
   type Product,
 } from "../lib/api";
 
@@ -21,6 +22,7 @@ export default function Home() {
   const [stock, setStock] = useState("");
   const [saving, setSaving] = useState(false);
   const [formMessage, setFormMessage] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   useEffect(() => {
     checkBackendConnection()
@@ -46,6 +48,28 @@ export default function Home() {
       });
   }, []);
 
+  function resetForm() {
+    setName("");
+    setDescription("");
+    setPrice("");
+    setStock("");
+    setEditingId(null);
+  }
+
+  function handleEdit(product: Product) {
+    setEditingId(product.id);
+    setName(product.name);
+    setDescription(product.description);
+    setPrice(String(product.price));
+    setStock(String(product.stock));
+    setFormMessage("");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormMessage("");
@@ -68,25 +92,45 @@ export default function Home() {
     setSaving(true);
 
     try {
-      const newProduct = await createProduct({
-        name: name.trim(),
-        description: description.trim(),
-        price: numericPrice,
-        stock: numericStock,
-      });
+      if (editingId !== null) {
+        const updatedProduct = await updateProduct({
+          id: editingId,
+          name: name.trim(),
+          description: description.trim(),
+          price: numericPrice,
+          stock: numericStock,
+        });
 
-      setProducts((currentProducts) => [
-        ...currentProducts,
-        newProduct,
-      ]);
+        setProducts((currentProducts) =>
+          currentProducts.map((product) =>
+            product.id === editingId ? updatedProduct : product
+          )
+        );
 
-      setName("");
-      setDescription("");
-      setPrice("");
-      setStock("");
-      setFormMessage("¡Producto registrado correctamente!");
+        resetForm();
+        setFormMessage("¡Producto actualizado correctamente!");
+      } else {
+        const newProduct = await createProduct({
+          name: name.trim(),
+          description: description.trim(),
+          price: numericPrice,
+          stock: numericStock,
+        });
+
+        setProducts((currentProducts) => [
+          ...currentProducts,
+          newProduct,
+        ]);
+
+        resetForm();
+        setFormMessage("¡Producto registrado correctamente!");
+      }
     } catch {
-      setFormMessage("No se pudo registrar el producto.");
+      setFormMessage(
+        editingId !== null
+          ? "No se pudo actualizar el producto."
+          : "No se pudo registrar el producto."
+      );
     } finally {
       setSaving(false);
     }
@@ -138,10 +182,15 @@ export default function Home() {
 
         <section className="mb-10 rounded-xl border bg-white p-8 shadow-sm">
           <h3 className="mb-6 text-2xl font-bold">
-            Registrar nuevo producto
+            {editingId !== null
+              ? "Editar producto"
+              : "Registrar nuevo producto"}
           </h3>
 
-          <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
+          <form
+            onSubmit={handleSubmit}
+            className="grid gap-5 md:grid-cols-2"
+          >
             <div>
               <label htmlFor="name" className="mb-2 block font-medium">
                 Nombre del producto
@@ -158,7 +207,10 @@ export default function Home() {
             </div>
 
             <div>
-              <label htmlFor="description" className="mb-2 block font-medium">
+              <label
+                htmlFor="description"
+                className="mb-2 block font-medium"
+              >
                 Descripción
               </label>
               <input
@@ -206,14 +258,32 @@ export default function Home() {
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div className="flex flex-wrap gap-3 md:col-span-2">
               <button
                 type="submit"
                 disabled={saving}
                 className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? "Registrando..." : "Registrar producto"}
+                {saving
+                  ? "Guardando..."
+                  : editingId !== null
+                    ? "Guardar cambios"
+                    : "Registrar producto"}
               </button>
+
+              {editingId !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setFormMessage("");
+                  }}
+                  disabled={saving}
+                  className="rounded-lg border px-6 py-3 font-semibold hover:bg-slate-100"
+                >
+                  Cancelar edición
+                </button>
+              )}
             </div>
 
             {formMessage && (
@@ -232,7 +302,9 @@ export default function Home() {
           {loadingProducts ? (
             <p className="text-slate-500">Cargando productos...</p>
           ) : products.length === 0 ? (
-            <p className="text-slate-500">No hay productos registrados.</p>
+            <p className="text-slate-500">
+              No hay productos registrados.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -242,13 +314,16 @@ export default function Home() {
                     <th className="p-3">Descripción</th>
                     <th className="p-3">Precio</th>
                     <th className="p-3">Stock</th>
+                    <th className="p-3">Acciones</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {products.map((product) => (
                     <tr key={product.id} className="border-b">
-                      <td className="p-3 font-semibold">{product.name}</td>
+                      <td className="p-3 font-semibold">
+                        {product.name}
+                      </td>
                       <td className="p-3">{product.description}</td>
                       <td className="p-3">
                         {product.price.toLocaleString("es-CO", {
@@ -258,6 +333,15 @@ export default function Home() {
                         })}
                       </td>
                       <td className="p-3">{product.stock} unidades</td>
+                      <td className="p-3">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(product)}
+                          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+                        >
+                          Editar
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

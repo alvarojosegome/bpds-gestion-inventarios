@@ -58,3 +58,32 @@ export async function createProduct(
 
   return result.data;
 }
+
+// Actualizar un producto existente.
+export async function updateProduct(
+  product: Product
+): Promise<Product> {
+  const response = await fetch(
+    `${API_URL}/api/products/${product.id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        stock: product.stock,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("No se pudo actualizar el producto");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}
