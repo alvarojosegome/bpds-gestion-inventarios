@@ -104,6 +104,56 @@ app.post("/api/products", (req, res) => {
   });
 });
 
+// Actualizar un producto existente.
+app.put("/api/products/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const { name, description, price, stock } = req.body;
+
+  const productIndex = products.findIndex(
+    (product) => product.id === id
+  );
+
+  if (productIndex === -1) {
+    return res.status(404).json({
+      status: "error",
+      message: "Producto no encontrado",
+    });
+  }
+
+  if (
+    typeof name !== "string" ||
+    !name.trim() ||
+    typeof description !== "string" ||
+    !description.trim() ||
+    typeof price !== "number" ||
+    !Number.isFinite(price) ||
+    price <= 0 ||
+    typeof stock !== "number" ||
+    !Number.isInteger(stock) ||
+    stock < 0
+  ) {
+    return res.status(400).json({
+      status: "error",
+      message: "Los datos del producto no son válidos",
+    });
+  }
+
+  const updatedProduct = {
+    id,
+    name: name.trim(),
+    description: description.trim(),
+    price,
+    stock,
+  };
+
+  products[productIndex] = updatedProduct;
+
+  return res.status(200).json({
+    status: "ok",
+    message: "Producto actualizado correctamente",
+    data: updatedProduct,
+  });
+});
 // =====================================
 // INICIO DEL SERVIDOR
 // =====================================
