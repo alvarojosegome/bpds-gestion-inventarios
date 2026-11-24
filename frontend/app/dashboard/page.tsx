@@ -51,6 +51,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [formMessage, setFormMessage] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const filteredProducts = products.filter((product) => {
     const search = searchTerm.trim().toLowerCase();
@@ -130,6 +131,10 @@ export default function Home() {
     setMinStock("5");
     setEditingId(null);
   }
+
+  function handleViewDetails(product: Product) {
+  setSelectedProduct(product);
+}
 
   function handleEdit(product: Product) {
     setEditingId(product.id);
@@ -765,6 +770,13 @@ export default function Home() {
                               >
                                 ✏️ Editar
                               </button>
+                              <button
+                              type="button"
+                              onClick={()=> handleViewDetails(product)}
+                              className="rounded-lg bg-blue-100 px-3 py-2 text-xs font-bolt text-blue-800 transition hover:bg-blue-200"
+                              >
+                                👁 Ver
+                              </button>
 
                               <button
                                 type="button"
@@ -852,6 +864,129 @@ export default function Home() {
         </section>
       </div>
 
+            {/* Ventana de detalles del producto */}
+      {selectedProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+          onClick={() => setSelectedProduct(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-details-title"
+            className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-700 to-indigo-800 px-6 py-7 text-white">
+              <div className="absolute -right-8 -top-10 text-9xl opacity-10">
+                📦
+              </div>
+
+              <div className="relative flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-blue-200">
+                    Información del producto
+                  </p>
+                  <h3
+                    id="product-details-title"
+                    className="mt-2 text-2xl font-extrabold"
+                  >
+                    {selectedProduct.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-blue-100">
+                    Consulta todos los datos de este producto.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedProduct(null)}
+                  aria-label="Cerrar detalles"
+                  className="rounded-xl bg-white/15 px-3 py-2 text-xl transition hover:bg-white/25"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-5 p-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Descripción
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-700">
+                  {selectedProduct.description}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl bg-blue-50 p-4">
+                  <p className="text-xs font-semibold text-blue-600">
+                    Precio unitario
+                  </p>
+                  <p className="mt-2 text-lg font-extrabold text-blue-900">
+                    {formatCurrency(selectedProduct.price)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-violet-50 p-4">
+                  <p className="text-xs font-semibold text-violet-600">
+                    Stock disponible
+                  </p>
+                  <p className="mt-2 text-2xl font-extrabold text-violet-900">
+                    {selectedProduct.stock}
+                  </p>
+                  <p className="text-xs text-violet-600">unidades</p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-semibold text-slate-500">
+                    Stock mínimo
+                  </p>
+                  <p className="mt-2 text-xl font-extrabold text-slate-800">
+                    {selectedProduct.minStock}
+                  </p>
+                  <p className="text-xs text-slate-500">unidades</p>
+                </div>
+
+                <div className="rounded-2xl bg-emerald-50 p-4">
+                  <p className="text-xs font-semibold text-emerald-600">
+                    Valor en inventario
+                  </p>
+                  <p className="mt-2 text-lg font-extrabold text-emerald-900">
+                    {formatCurrency(
+                      selectedProduct.price * selectedProduct.stock
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 p-4">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Estado del inventario
+                </p>
+
+                <span
+                  className={`inline-flex rounded-full px-4 py-2 text-sm font-extrabold ring-1 ring-inset ${
+                    getStockStatus(selectedProduct).className
+                  }`}
+                >
+                  {getStockStatus(selectedProduct).label}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedProduct(null)}
+                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:from-blue-700 hover:to-indigo-700"
+              >
+                Cerrar detalles
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <footer className="mt-10 border-t border-slate-200 bg-white px-6 py-6 text-center">
         <p className="text-sm font-semibold text-slate-600">
           InventarioPro © 2026
@@ -861,5 +996,5 @@ export default function Home() {
         </p>
       </footer>
     </main>
-  );
+  ); 
 }
