@@ -79,6 +79,15 @@ const products: Product[] = [
   },
 ];
 
+// Consultar todos los productos.
+app.get("/api/products", (_req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "Listado de productos",
+    data: products,
+  });
+});
+
 // Consultar productos.
 app.get("/api/products/low-stock", (_req, res) => {
   res.status(200).json({
