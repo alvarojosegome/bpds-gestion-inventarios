@@ -27,6 +27,7 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [onlyLowStock, setOnlyLowStock] = useState(false);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -39,16 +40,20 @@ export default function Home() {
 
   // Filtrar productos por nombre o descripción.
   const filteredProducts = products.filter((product) => {
-    const search = searchTerm.trim().toLowerCase();
+  const search = searchTerm.trim().toLowerCase();
 
-    return (
-      product.name.toLowerCase().includes(search) ||
-      product.description.toLowerCase().includes(search)
-    );
-  });
+  const matchesSearch =
+    product.name.toLowerCase().includes(search) ||
+    product.description.toLowerCase().includes(search);
+
+  const matchesStock =
+    !onlyLowStock || product.stock <= product.minStock;
+
+  return matchesSearch && matchesStock;
+});
   const lowStockProducts = products.filter(
-  (product) => product.stock <= product.minStock
-);
+      (product) => product.stock <= product.minStock
+  );
   useEffect(() => {
     checkBackendConnection()
       .then((data) => {
@@ -392,6 +397,15 @@ if (
               placeholder="Buscar por nombre o descripción..."
               className="w-full rounded-lg border p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+            <label className="mt-3 flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={onlyLowStock}
+                onChange={(event) => setOnlyLowStock(event.target.checked)}
+                className="h-4 w-4"
+              />
+              Mostrar solo productos con stock bajo
+            </label>
           </div>
 
           {lowStockProducts.length > 0 && (
