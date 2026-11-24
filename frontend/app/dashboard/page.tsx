@@ -693,6 +693,8 @@ export default function Home() {
               placeholder="Buscar por nombre o descripción..."
               className="w-full rounded-lg border p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+          </div>
+        </section>
         {/* Inventario */}
         <section
           id="inventario"
