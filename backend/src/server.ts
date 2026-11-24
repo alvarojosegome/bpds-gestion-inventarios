@@ -2,6 +2,14 @@
 import express from "express";
 import cors from "cors";
 
+
+// Cargar variables de entorno desde backend/.env (si existe).
+try {
+  process.loadEnvFile();
+} catch {
+  console.warn("No se encontró backend/.env; la búsqueda de imágenes no estará disponible.");
+}
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -225,6 +233,136 @@ app.delete("/api/products/:id", (req, res) => {
     data: deletedProduct,
   });
 });
+
+// =====================================
+// MÓDULO DE IMÁGENES (sugerencias con Unsplash)
+// =====================================
+
+const UNSPLASH_API = "https://api.unsplash.com";
+const UTM = "utm_source=InventarioPro&utm_medium=referral";
+
+interface ImageOption {
+  id: string;
+  description: string;
+  thumbnail: string; // miniatura para mostrar la opción
+  url: string; // imagen que se guarda en el producto (hotlink a Unsplash)
+  authorName: string; // atribución obligatoria
+  authorUrl: string;
+  unsplashUrl: string;
+  downloadLocation: string; // se usa para notificar a Unsplash cuando se elige
+}
+
+function getUnsplashKey(): string | undefined {
+  return process.env.UNSPLASH_ACCESS_KEY;
+}
+
+// Buscar 3 imágenes sugeridas según el nombre del producto.
+app.get("/api/images/search", async (req, res) => {
+  const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const accessKey = getUnsplashKey();
+
+  if (!query) {
+    return res.status(400).json({
+      status: "error",
+      message: "Debe indicar un texto de búsqueda",
+    });
+  }
+
+  if (!accessKey) {
+    return res.status(503).json({
+      status: "error",
+      message: "La búsqueda de imágenes no está configurada",
+    });
+  }
+
+  const params = new URLSearchParams({
+    query,
+    per_page: "3",
+    lang: "es",
+    orientation: "squarish",
+    content_filter: "high",
+  });
+
+  try {
+    const response = await fetch(`${UNSPLASH_API}/search/photos?${params}`, {
+      headers: {
+        Authorization: `Client-ID ${accessKey}`,
+        "Accept-Version": "v1",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Unsplash respondió ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    const options: ImageOption[] = (result.results ?? []).map((photo: any) => ({
+      id: photo.id,
+      description: photo.alt_description ?? "",
+      thumbnail: photo.urls.small,
+      url: photo.urls.regular,
+      authorName: photo.user.name,
+      authorUrl: `${photo.user.links.html}?${UTM}`,
+      unsplashUrl: `https://unsplash.com/?${UTM}`,
+      downloadLocation: photo.links.download_location,
+    }));
+
+    return res.status(200).json({
+      status: "ok",
+      message: "Imágenes sugeridas",
+      data: options,
+    });
+  } catch (error) {
+    console.error("Error buscando imágenes:", error);
+    return res.status(502).json({
+      status: "error",
+      message: "No fue posible buscar imágenes en este momento",
+    });
+  }
+});
+
+// Notificar a Unsplash que se eligió una foto (requisito de sus guías).
+app.post("/api/images/select", async (req, res) => {
+  const { downloadLocation } = req.body;
+  const accessKey = getUnsplashKey();
+
+  if (
+    typeof downloadLocation !== "string" ||
+    !downloadLocation.startsWith(`${UNSPLASH_API}/`)
+  ) {
+    return res.status(400).json({
+      status: "error",
+      message: "La imagen seleccionada no es válida",
+    });
+  }
+
+  if (!accessKey) {
+    return res.status(503).json({
+      status: "error",
+      message: "La búsqueda de imágenes no está configurada",
+    });
+  }
+
+  try {
+    await fetch(downloadLocation, {
+      headers: { Authorization: `Client-ID ${accessKey}` },
+    });
+
+    return res.status(200).json({
+      status: "ok",
+      message: "Selección registrada",
+    });
+  } catch (error) {
+    console.error("Error notificando a Unsplash:", error);
+    return res.status(502).json({
+      status: "error",
+      message: "No fue posible registrar la selección",
+    });
+  }
+});
+
+
 // =====================================
 // INICIO DEL SERVIDOR
 // =====================================
