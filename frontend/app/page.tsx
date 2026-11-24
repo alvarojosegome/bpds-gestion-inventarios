@@ -1,3 +1,4 @@
+import Link from "next/link";
 
 "use client";
 
@@ -197,16 +198,17 @@ if (
     }
   }
 
+export default function Landing() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="flex items-center justify-between border-b bg-white px-8 py-5">
-        <h1 className="text-2xl font-bold text-blue-700">
-          InventarioPro
-        </h1>
-
-        <span className="text-sm text-slate-500">
-          Plataforma SaaS para MicroPyMEs
-        </span>
+    <main>
+      <header className="flex items-center justify-between px-8 py-4">
+        <span className="text-xl font-bold">Gestión de Inventarios</span>
+        <Link
+          href="/login"
+          className="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700"
+        >
+          Login
+        </Link>
       </header>
 
       <section className="mx-auto max-w-6xl px-8 py-12">
@@ -508,11 +510,12 @@ if (
             {message}
           </p>
         </div>
+      <section className="px-5 py-32 text-center">
+        <h1 className="text-4xl font-bold">Controla tu inventario fácilmente</h1>
+        <p className="mt-4 text-lg opacity-80">
+          Productos, entradas, salidas y stock en un solo lugar.
+        </p>
       </section>
-
-      <footer className="border-t bg-white px-8 py-6 text-center text-sm text-slate-500">
-        InventarioPro © 2026 - Gestión de inventarios y pedidos
-      </footer>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 
 import express from "express";
 import cors from "cors";
+import authRouter from "./auth.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -9,13 +10,9 @@ const PORT = process.env.PORT || 4000;
 // CONFIGURACIÓN GENERAL
 // =====================================
 
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
-
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-  })
-);
+app.use("/auth", authRouter);
 
 // =====================================
 // RUTA DE COMPROBACIÓN
