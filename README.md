@@ -178,6 +178,8 @@ npm install cookie-parser
 npm install -D @types/cookie-parser
 npm install dotenv
 ```
+### 6.5. Configurar variables de entorno 
+
 Crear el archivo `.env` dentro de `backend/`:
 
 ```env
