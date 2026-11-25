@@ -51,6 +51,21 @@ db.exec(`
   );
 `);
 
+// Columnas de imagen del producto (se agregan si todavía no existen).
+const productColumns = (
+  db.prepare("PRAGMA table_info(products)").all() as { name: string }[]
+).map((column) => column.name);
+
+for (const column of [
+  "image_url",
+  "image_credit_name",
+  "image_credit_url",
+]) {
+  if (!productColumns.includes(column)) {
+    db.exec(`ALTER TABLE products ADD COLUMN ${column} TEXT`);
+  }
+}
+
 // Crear la empresa de demostración y sus productos iniciales.
 const initializeDemoCompany = db.transaction(() => {
   let company = db
