@@ -13,6 +13,7 @@ El proyecto utiliza una arquitectura cliente-servidor:
 - **Frontend:** Next.js, React y TypeScript.
 - **Backend:** Node.js, Express y TypeScript.
 - **Comunicación:** API REST mediante solicitudes HTTP.
+- **Imágenes de productos:** sugerencias desde la API de Unsplash o carga desde el equipo.
 - **Estilos:** Tailwind CSS.
 
 ## 2. Tecnologías y herramientas
@@ -89,7 +90,12 @@ Ubicación: `backend/`
 | Paquete | Versión | Función |
 |---|---|---|
 | express | ^5.3.0 | Framework para crear el servidor y la API REST. |
-| cors | ^2.8.5 | Permite configurar solicitudes entre diferentes orígenes. |
+| cors | ^2.8.6 | Permite configurar solicitudes entre diferentes orígenes. |
+| better-sqlite3 | ^13.2.0 | Base de datos SQLite para guardar empresas, usuarios y productos. |
+| bcryptjs | ^3.0.3 | Cifrado de contraseñas. |
+| jsonwebtoken | ^9.0.3 | Generación y verificación de tokens de sesión (JWT). |
+| cookie-parser | ^1.4.7 | Lectura de la cookie de sesión. |
+| dotenv | ^18.0.10 | Carga de variables de entorno desde `.env`. |
 
 ### Dependencias de desarrollo
 
@@ -97,7 +103,10 @@ Ubicación: `backend/`
 |---|---|---|
 | @types/express | ^5.0.6 | Definiciones de tipos de Express. |
 | @types/node | ^26.6.6 | Definiciones de tipos de Node.js. |
-| @types/cors | Según package-lock.json | Definiciones de tipos para CORS. |
+| @types/cors | ^2.8.19 | Definiciones de tipos para CORS. |
+| @types/better-sqlite3 | ^9.6.0 | Definiciones de tipos para better-sqlite3. |
+| @types/cookie-parser | ^1.4.10 | Definiciones de tipos para cookie-parser. |
+| @types/jsonwebtoken | ^9.0.10 | Definiciones de tipos para jsonwebtoken. |
 | tsx | ^4.23.15 | Ejecución de TypeScript durante el desarrollo. |
 | typescript | ^7.0.2 | Compilación y verificación de TypeScript. |
 
@@ -183,8 +192,8 @@ npm install dotenv
 Crear el archivo `.env` dentro de `backend/`:
 
 ```env
-JWT_SECRET=d4fe7e95f192d816408c820c7f14f28468aa15d7c11543166323040a838ba617
-UNSPLASH_ACCESS_KEY=N2jZdnElMYOBVev--pTBcFrpOzorOqmvX_HAcu9r_e8
+JWT_SECRET=pon_aqui_una_clave_larga_inventada
+UNSPLASH_ACCESS_KEY=pon_aqui_la_clave_de_unsplash
 ```
 ## 7. Ejecución del proyecto
 
@@ -234,20 +243,35 @@ bpds-gestion-inventarios/
 │
 ├── backend/
 │   ├── src/
-│   │   └── server.ts
+│   │   ├── server.ts
+│   │   ├── auth.ts
+│   │   ├── authMiddleware.ts
+│   │   └── database.ts
+│   ├── .env
+│   ├── .env.example
+│   ├── inventariopro.db
 │   ├── package.json
 │   ├── package-lock.json
 │   └── tsconfig.json
 │
 ├── frontend/
 │   ├── app/
+│   │   ├── dashboard/
+│   │   │   ├── page.tsx
+│   │   │   └── ImageSelector.tsx
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   ├── register/
+│   │   │   └── page.tsx
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
+│   │   ├── landing.module.css
 │   │   └── globals.css
 │   ├── lib/
 │   │   └── api.ts
 │   ├── public/
 │   ├── .env.local
+│   ├── proxy.ts
 │   ├── next.config.ts
 │   ├── package.json
 │   ├── pnpm-lock.yaml
