@@ -8,6 +8,13 @@ export interface Product {
   price: number;
   stock: number;
   minStock: number;
+  imageUrl?: string;
+  imageCredit?: ImageCredit;
+}
+
+export interface ImageCredit {
+  authorName: string;
+  authorUrl: string;
 }
 
 // Comprobar conexión con el backend.
@@ -31,12 +38,13 @@ export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${API_URL}/api/products`, {
     credentials: "include",
   });
-
+  
   if (!response.ok) {
     throw new Error("No se pudieron consultar los productos");
   }
 
   const result = await response.json();
+
   return result.data;
 }
 
@@ -58,6 +66,7 @@ export async function createProduct(
   }
 
   const result = await response.json();
+
   return result.data;
 }
 
@@ -79,6 +88,8 @@ export async function updateProduct(
         price: product.price,
         stock: product.stock,
         minStock: product.minStock,
+        imageUrl: product.imageUrl ?? "",
+        imageCredit: product.imageCredit,
       }),
     }
   );
@@ -88,6 +99,7 @@ export async function updateProduct(
   }
 
   const result = await response.json();
+
   return result.data;
 }
 
@@ -103,5 +115,55 @@ export async function deleteProduct(id: number): Promise<Product> {
   }
 
   const result = await response.json();
+
   return result.data;
+}
+
+
+// =====================================
+// IMÁGENES (sugerencias con Unsplash)
+// =====================================
+
+export interface ImageOption {
+  id: string;
+  description: string;
+  thumbnail: string;
+  url: string;
+  authorName: string;
+  authorUrl: string;
+  unsplashUrl: string;
+  downloadLocation: string;
+}
+
+// Buscar 3 imágenes sugeridas según el nombre del producto.
+export async function searchImages(query: string): Promise<ImageOption[]> {
+  const response = await fetch(
+    `${API_URL}/api/images/search?q=${encodeURIComponent(query)}`,
+    { credentials: "include" }
+  );
+
+  if (!response.ok) {
+    throw new Error("No se pudieron buscar imágenes");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}
+
+// Avisar a Unsplash que se eligió una imagen (requisito de sus guías).
+export async function selectImage(downloadLocation: string): Promise<void> {
+  try {
+    await fetch(`${API_URL}/api/images/select`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ downloadLocation }),
+    });
+  } catch (error) {
+    // No bloquea el registro del producto si falla el aviso.
+    console.error("No se pudo registrar la selección de imagen:", error);
+  }
 }
