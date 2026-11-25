@@ -1,6 +1,6 @@
 
 "use client";
-
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import {
@@ -389,7 +389,12 @@ export default function Home() {
         <div className="absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
          
         <div className="relative mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-6 lg:px-10">
-          <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            aria-label="Ir a la página de inicio"
+            title="Ir a la página de inicio"
+            className="flex items-center gap-3 transition hover:opacity-80"
+          >
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-2xl shadow-inner ring-1 ring-white/20">
               📦
             </div>
@@ -401,7 +406,7 @@ export default function Home() {
                 Plataforma SaaS para MicroPyMEs
               </p>
             </div>
-          </div>
+          </Link>
 
           <div className="flex items-center gap-4">
             <div className="hidden text-right sm:block">
