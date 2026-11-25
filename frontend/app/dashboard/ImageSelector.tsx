@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { searchImages, selectImage, type ImageOption } from "../../lib/api";
+import {
+  searchImages,
+  selectImage,
+  type ImageCredit,
+  type ImageOption,
+} from "../../lib/api";
 
 interface ImageSelectorProps {
     productName: string; // nombre escrito en el formulario
     value: string; // URL elegida ("" = sin imagen)
-    onChange: (imageUrl: string) => void;
+    onChange: (imageUrl: string, credit?: ImageCredit) => void;
 }
 
 type SearchStatus = "idle" | "loading" | "done" | "error";
@@ -122,7 +127,10 @@ export default function ImageSelector({
 
     function handleSelectOption(option: ImageOption) {
         setUploadError("");
-        onChange(option.url);
+        onChange(option.url, {
+            authorName: option.authorName,
+            authorUrl: option.authorUrl,
+        });
         void selectImage(option.downloadLocation);
     }
 
@@ -334,4 +342,4 @@ export default function ImageSelector({
             )}
         </div>
     );
-}
+}

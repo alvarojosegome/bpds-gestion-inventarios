@@ -9,6 +9,12 @@ export interface Product {
   stock: number;
   minStock: number;
   imageUrl?: string;
+  imageCredit?: ImageCredit;
+}
+
+export interface ImageCredit {
+  authorName: string;
+  authorUrl: string;
 }
 
 // Comprobar conexión con el backend.
@@ -79,6 +85,7 @@ export async function updateProduct(
         stock: product.stock,
         minStock: product.minStock,
         imageUrl: product.imageUrl ?? "",
+        imageCredit: product.imageCredit,
       }),
     }
   );
@@ -152,4 +159,4 @@ export async function selectImage(downloadLocation: string): Promise<void> {
     // No bloquea el registro del producto si falla el aviso.
     console.error("No se pudo registrar la selección de imagen:", error);
   }
-}
+}

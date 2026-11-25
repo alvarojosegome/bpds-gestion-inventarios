@@ -45,6 +45,12 @@ interface Product {
   stock: number;
   minStock: number; // si stock <= minStock se activa la alerta
   imageUrl?: string; // URL de la imagen del producto (opcional)
+  imageCredit?: ImageCredit; // autor de la foto (solo fotos de Unsplash)
+}
+
+interface ImageCredit {
+  authorName: string;
+  authorUrl: string;
 }
 
 const DEFAULT_MIN_STOCK = 5;
@@ -72,6 +78,30 @@ function isValidImageUrl(value: unknown): boolean {
   } catch {
     return false;
   }
+}
+
+// imageCredit es opcional; si viene, debe tener autor y un link de Unsplash.
+function isValidImageCredit(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== "object") return false;
+  const { authorName, authorUrl } = value as Record<string, unknown>;
+  return (
+    typeof authorName === "string" &&
+    authorName.trim().length > 0 &&
+    authorName.length <= 100 &&
+    typeof authorUrl === "string" &&
+    authorUrl.startsWith("https://unsplash.com/")
+  );
+}
+
+// Guardar solo los campos esperados del crédito (o nada si no hay imagen).
+function buildImageCredit(
+  imageUrl: unknown,
+  imageCredit: unknown
+): ImageCredit | undefined {
+  if (!imageUrl || !imageCredit) return undefined;
+  const { authorName, authorUrl } = imageCredit as ImageCredit;
+  return { authorName: authorName.trim(), authorUrl };
 }
 
 const products: Product[] = [
@@ -121,7 +151,8 @@ app.get("/api/products/low-stock", (_req, res) => {
 
 // Registrar un nuevo producto.
 app.post("/api/products", (req, res) => {
-  const { name, description, price, stock, minStock, imageUrl } = req.body;
+  const { name, description, price, stock, minStock, imageUrl, imageCredit } =
+    req.body;
 
   if (
     typeof name !== "string" ||
@@ -135,7 +166,8 @@ app.post("/api/products", (req, res) => {
     !Number.isInteger(stock) ||
     stock < 0 ||
     !isValidMinStock(minStock) ||
-    !isValidImageUrl(imageUrl)
+    !isValidImageUrl(imageUrl) ||
+    !isValidImageCredit(imageCredit)
   ) {
     return res.status(400).json({
       status: "error",
@@ -151,6 +183,7 @@ app.post("/api/products", (req, res) => {
     stock,
     minStock: minStock ?? DEFAULT_MIN_STOCK,
     imageUrl: imageUrl || undefined,
+    imageCredit: buildImageCredit(imageUrl, imageCredit),
   };
 
   products.push(newProduct);
@@ -165,7 +198,8 @@ app.post("/api/products", (req, res) => {
 // Actualizar un producto existente.
 app.put("/api/products/:id", (req, res) => {
   const id = Number(req.params.id);
-  const { name, description, price, stock, minStock, imageUrl } = req.body;
+  const { name, description, price, stock, minStock, imageUrl, imageCredit } =
+    req.body;
 
   const productIndex = products.findIndex(
     (product) => product.id === id
@@ -190,7 +224,8 @@ app.put("/api/products/:id", (req, res) => {
     !Number.isInteger(stock) ||
     stock < 0 ||
     !isValidMinStock(minStock) ||
-    !isValidImageUrl(imageUrl)
+    !isValidImageUrl(imageUrl) ||
+    !isValidImageCredit(imageCredit)
   ) {
     return res.status(400).json({
       status: "error",
@@ -206,6 +241,10 @@ app.put("/api/products/:id", (req, res) => {
     stock,
     minStock: minStock ?? products[productIndex].minStock,
     imageUrl: imageUrl ?? products[productIndex].imageUrl,
+    imageCredit:
+      imageUrl === undefined
+        ? products[productIndex].imageCredit
+        : buildImageCredit(imageUrl, imageCredit),
   };
 
   products[productIndex] = updatedProduct;

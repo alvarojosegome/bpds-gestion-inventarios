@@ -9,9 +9,38 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  type ImageCredit,
   type Product,
 } from "../../lib/api";
 import ImageSelector from "./ImageSelector";
+
+// Crédito pequeño del fotógrafo sobre la imagen (requisito de Unsplash).
+function PhotoCredit({ credit }: { credit?: ImageCredit }) {
+  if (!credit) return null;
+
+  return (
+    <span className="absolute bottom-1 right-1 max-w-[90%] truncate rounded bg-black/45 px-1.5 py-0.5 text-[10px] leading-tight text-white/90">
+      Foto:{" "}
+      <a
+        href={credit.authorUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        {credit.authorName}
+      </a>{" "}
+      ·{" "}
+      <a
+        href="https://unsplash.com/?utm_source=InventarioPro&utm_medium=referral"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        Unsplash
+      </a>
+    </span>
+  );
+}
 
 function getStockStatus(product: Product) {
   if (product.stock === 0) {
@@ -54,6 +83,9 @@ export default function Home() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [imageUrl, setImageUrl] = useState("");
+  const [imageCredit, setImageCredit] = useState<ImageCredit | undefined>(
+    undefined
+  );
   const [viewMode, setViewMode] = useState<"tabla" | "tarjetas">("tabla");
 
   const filteredProducts = products.filter((product) => {
@@ -133,9 +165,70 @@ export default function Home() {
     setStock("");
     setMinStock("5");
     setImageUrl("");
+    setImageCredit(undefined);
     setEditingId(null);
   }
 
+  // Guardar la imagen elegida y su crédito (si viene de Unsplash).
+  function handleImageChange(url: string, credit?: ImageCredit) {
+    setImageUrl(url);
+    setImageCredit(credit);
+  }
+
+    // Exportar el inventario actual a un archivo CSV (compatible con Excel en español).
+  function handleExportCSV() {
+    if (products.length === 0) {
+      alert("No hay productos en el inventario para exportar.");
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Nombre",
+      "Descripción",
+      "Precio (COP)",
+      "Stock Actual",
+      "Stock Mínimo",
+      "Estado",
+    ];
+
+    const rows = products.map((product) => {
+      const estado =
+        product.stock === 0
+          ? "Agotado"
+          : product.stock <= product.minStock
+          ? "Stock bajo"
+          : "Disponible";
+
+      return [
+        product.id,
+        product.name.replace(/;/g, ","),
+        product.description.replace(/;/g, ","),
+        product.price,
+        product.stock,
+        product.minStock,
+        estado,
+      ].join(";");
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `inventario_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+
+  // Preparar el formulario para editar un producto.
   function handleViewDetails(product: Product) {
   setSelectedProduct(product);
 }
@@ -148,6 +241,7 @@ export default function Home() {
     setStock(String(product.stock));
     setMinStock(String(product.minStock));
     setImageUrl(product.imageUrl ?? "");
+    setImageCredit(product.imageCredit);
     setFormMessage("");
 
     window.scrollTo({
@@ -214,6 +308,7 @@ export default function Home() {
           stock: numericStock,
           minStock: numericMinStock,
           imageUrl,
+          imageCredit,
         });
 
         setProducts((currentProducts) =>
@@ -232,6 +327,7 @@ export default function Home() {
           stock: numericStock,
           minStock: numericMinStock,
           imageUrl: imageUrl || undefined,
+          imageCredit: imageUrl ? imageCredit : undefined,
         });
 
         setProducts((currentProducts) => [...currentProducts, newProduct]);
@@ -258,7 +354,7 @@ export default function Home() {
       <header className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-blue-950 to-blue-800 text-white shadow-xl">
         <div className="absolute -right-20 -top-32 h-80 w-80 rounded-full bg-blue-400/20 blur-3xl" />
         <div className="absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
-
+         
         <div className="relative mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-6 lg:px-10">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-2xl shadow-inner ring-1 ring-white/20">
@@ -577,7 +673,7 @@ export default function Home() {
             <ImageSelector
               productName={name}
               value={imageUrl}
-              onChange={setImageUrl}
+              onChange={handleImageChange}
             />
 
             <div className="flex flex-wrap items-end gap-3">
@@ -623,6 +719,9 @@ export default function Home() {
           </form>
         </section>
 
+        
+
+            
         {/* Inventario */}
         <section
           id="inventario"
@@ -672,6 +771,14 @@ export default function Home() {
               <span className="w-fit rounded-full bg-blue-50 px-4 py-2 text-xs font-bold text-blue-700">
                 {products.length} productos
               </span>
+
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"
+              >
+                Exportar CSV
+              </button>
             </div>
           </div>
 
@@ -784,6 +891,11 @@ export default function Home() {
                                   src={product.imageUrl}
                                   alt={product.name}
                                   loading="lazy"
+                                  title={
+                                    product.imageCredit
+                                      ? `Foto: ${product.imageCredit.authorName} · Unsplash`
+                                      : undefined
+                                  }
                                   className="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-slate-200"
                                 />
                               ) : (
@@ -860,12 +972,15 @@ export default function Home() {
                         className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                       >
                         {product.imageUrl ? (
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            loading="lazy"
-                            className="h-36 w-full object-cover"
-                          />
+                          <div className="relative">
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              loading="lazy"
+                              className="h-36 w-full object-cover"
+                            />
+                            <PhotoCredit credit={product.imageCredit} />
+                          </div>
                         ) : (
                           <div className="flex h-36 w-full flex-col items-center justify-center gap-1 bg-slate-50 text-slate-400">
                             <span className="text-3xl" aria-hidden="true">
@@ -1044,11 +1159,14 @@ export default function Home() {
             </div>
 
             {selectedProduct.imageUrl && (
-              <img
-                src={selectedProduct.imageUrl}
-                alt={selectedProduct.name}
-                className="h-48 w-full object-cover"
-              />
+              <div className="relative">
+                <img
+                  src={selectedProduct.imageUrl}
+                  alt={selectedProduct.name}
+                  className="h-48 w-full object-cover"
+                />
+                <PhotoCredit credit={selectedProduct.imageCredit} />
+              </div>
             )}
 
             <div className="space-y-5 p-6">
