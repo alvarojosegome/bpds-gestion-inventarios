@@ -18,7 +18,7 @@ try {
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: ["https://inventariopro.store", "https://www.inventariopro.store"], credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" })); // permite imágenes cargadas desde el PC
 app.use("/auth", authRouter);
