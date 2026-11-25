@@ -9,8 +9,38 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  type ImageCredit,
   type Product,
 } from "../../lib/api";
+import ImageSelector from "./ImageSelector";
+
+// Crédito pequeño del fotógrafo sobre la imagen (requisito de Unsplash).
+function PhotoCredit({ credit }: { credit?: ImageCredit }) {
+  if (!credit) return null;
+
+  return (
+    <span className="absolute bottom-1 right-1 max-w-[90%] truncate rounded bg-black/45 px-1.5 py-0.5 text-[10px] leading-tight text-white/90">
+      Foto:{" "}
+      <a
+        href={credit.authorUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        {credit.authorName}
+      </a>{" "}
+      ·{" "}
+      <a
+        href="https://unsplash.com/?utm_source=InventarioPro&utm_medium=referral"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        Unsplash
+      </a>
+    </span>
+  );
+}
 
 function getStockStatus(product: Product) {
   if (product.stock === 0) {
@@ -52,6 +82,11 @@ export default function Home() {
   const [formMessage, setFormMessage] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageCredit, setImageCredit] = useState<ImageCredit | undefined>(
+    undefined
+  );
+  const [viewMode, setViewMode] = useState<"tabla" | "tarjetas">("tabla");
 
   const filteredProducts = products.filter((product) => {
     const search = searchTerm.trim().toLowerCase();
@@ -129,7 +164,15 @@ export default function Home() {
     setPrice("");
     setStock("");
     setMinStock("5");
+    setImageUrl("");
+    setImageCredit(undefined);
     setEditingId(null);
+  }
+
+  // Guardar la imagen elegida y su crédito (si viene de Unsplash).
+  function handleImageChange(url: string, credit?: ImageCredit) {
+    setImageUrl(url);
+    setImageCredit(credit);
   }
 
     // Exportar el inventario actual a un archivo CSV (compatible con Excel en español).
@@ -197,6 +240,8 @@ export default function Home() {
     setPrice(String(product.price));
     setStock(String(product.stock));
     setMinStock(String(product.minStock));
+    setImageUrl(product.imageUrl ?? "");
+    setImageCredit(product.imageCredit);
     setFormMessage("");
 
     window.scrollTo({
@@ -262,6 +307,8 @@ export default function Home() {
           price: numericPrice,
           stock: numericStock,
           minStock: numericMinStock,
+          imageUrl,
+          imageCredit,
         });
 
         setProducts((currentProducts) =>
@@ -279,6 +326,8 @@ export default function Home() {
           price: numericPrice,
           stock: numericStock,
           minStock: numericMinStock,
+          imageUrl: imageUrl || undefined,
+          imageCredit: imageUrl ? imageCredit : undefined,
         });
 
         setProducts((currentProducts) => [...currentProducts, newProduct]);
@@ -621,6 +670,12 @@ export default function Home() {
               </p>
             </div>
 
+            <ImageSelector
+              productName={name}
+              value={imageUrl}
+              onChange={handleImageChange}
+            />
+
             <div className="flex flex-wrap items-end gap-3">
               <button
                 type="submit"
@@ -682,6 +737,37 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <div
+                role="group"
+                aria-label="Modo de vista"
+                className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1"
+              >
+                <button
+                  type="button"
+                  onClick={() => setViewMode("tabla")}
+                  aria-pressed={viewMode === "tabla"}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    viewMode === "tabla"
+                      ? "bg-white text-blue-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  ☰ Tabla
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("tarjetas")}
+                  aria-pressed={viewMode === "tarjetas"}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    viewMode === "tarjetas"
+                      ? "bg-white text-blue-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  ▦ Tarjetas
+                </button>
+              </div>
+
               <span className="w-fit rounded-full bg-blue-50 px-4 py-2 text-xs font-bold text-blue-700">
                 {products.length} productos
               </span>
@@ -775,6 +861,7 @@ export default function Home() {
                 </p>
               </div>
             ) : (
+              viewMode === "tabla" ? (
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full min-w-[850px] text-left text-sm">
                   <thead className="bg-slate-100 text-xs uppercase tracking-wider text-slate-500">
@@ -799,9 +886,23 @@ export default function Home() {
                         >
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
-                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-lg">
-                                📦
-                              </span>
+                              {product.imageUrl ? (
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  loading="lazy"
+                                  title={
+                                    product.imageCredit
+                                      ? `Foto: ${product.imageCredit.authorName} · Unsplash`
+                                      : undefined
+                                  }
+                                  className="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-slate-200"
+                                />
+                              ) : (
+                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-lg">
+                                  📦
+                                </span>
+                              )}
                               <span className="font-bold text-slate-800">
                                 {product.name}
                               </span>
@@ -860,6 +961,87 @@ export default function Home() {
                   </tbody>
                 </table>
               </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filteredProducts.map((product) => {
+                    const stockStatus = getStockStatus(product);
+
+                    return (
+                      <article
+                        key={product.id}
+                        className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        {product.imageUrl ? (
+                          <div className="relative">
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              loading="lazy"
+                              className="h-36 w-full object-cover"
+                            />
+                            <PhotoCredit credit={product.imageCredit} />
+                          </div>
+                        ) : (
+                          <div className="flex h-36 w-full flex-col items-center justify-center gap-1 bg-slate-50 text-slate-400">
+                            <span className="text-3xl" aria-hidden="true">
+                              🖼️
+                            </span>
+                            <span className="text-xs font-semibold">Sin imagen</span>
+                          </div>
+                        )}
+
+                        <div className="flex flex-1 flex-col p-5">
+                          <h4 className="font-bold text-slate-800">{product.name}</h4>
+                          <p className="mb-4 mt-1 text-sm text-slate-500">
+                            {product.description}
+                          </p>
+
+                          <p className="mb-3 text-xl font-extrabold text-slate-900">
+                            {formatCurrency(product.price)}
+                          </p>
+
+                          <div className="mb-5 flex items-center justify-between gap-2">
+                            <span className="text-sm font-bold text-slate-700">
+                              {product.stock} unidades
+                              {product.stock <= product.minStock &&
+                                ` · mín. ${product.minStock}`}
+                            </span>
+                            <span
+                              className={`inline-flex shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ring-1 ring-inset ${stockStatus.className}`}
+                            >
+                              {stockStatus.label}
+                            </span>
+                          </div>
+
+                          <div className="mt-auto flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEdit(product)}
+                              className="flex-1 rounded-lg bg-amber-100 px-2 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-200"
+                            >
+                              ✏️ Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleViewDetails(product)}
+                              className="flex-1 rounded-lg bg-blue-100 px-2 py-2 text-xs font-bold text-blue-800 transition hover:bg-blue-200"
+                            >
+                              👁 Ver
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(product.id)}
+                              className="flex-1 rounded-lg bg-red-100 px-2 py-2 text-xs font-bold text-red-700 transition hover:bg-red-200"
+                            >
+                              🗑 Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )
             )}
 
             <p className="mt-4 text-xs text-slate-400">
@@ -975,6 +1157,17 @@ export default function Home() {
                 </button>
               </div>
             </div>
+
+            {selectedProduct.imageUrl && (
+              <div className="relative">
+                <img
+                  src={selectedProduct.imageUrl}
+                  alt={selectedProduct.name}
+                  className="h-48 w-full object-cover"
+                />
+                <PhotoCredit credit={selectedProduct.imageCredit} />
+              </div>
+            )}
 
             <div className="space-y-5 p-6">
               <div>
