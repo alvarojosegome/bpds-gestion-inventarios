@@ -130,7 +130,7 @@ export default function Home() {
       try {
         // Verificar la sesión y obtener la empresa del usuario autenticado.
         const sessionResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+          `/auth/me`,
           {
             credentials: "include",
           }
@@ -182,7 +182,7 @@ export default function Home() {
 
   async function handleLogout() {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+      await fetch(`/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

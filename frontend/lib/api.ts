@@ -1,4 +1,3 @@
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface Product {
@@ -20,7 +19,7 @@ export interface ImageCredit {
 // Comprobar conexión con el backend.
 export async function checkBackendConnection() {
   try {
-    const response = await fetch(`${API_URL}/api/health`);
+    const response = await fetch(`/api/health`);
 
     if (!response.ok) {
       throw new Error("No se pudo conectar con el backend");
@@ -35,7 +34,7 @@ export async function checkBackendConnection() {
 
 // Consultar productos.
 export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${API_URL}/api/products`, {
+  const response = await fetch(`/api/products`, {
     credentials: "include",
   });
   
@@ -52,7 +51,7 @@ export async function getProducts(): Promise<Product[]> {
 export async function createProduct(
   product: Omit<Product, "id">
 ): Promise<Product> {
-  const response = await fetch(`${API_URL}/api/products`, {
+  const response = await fetch(`/api/products`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -75,7 +74,7 @@ export async function updateProduct(
   product: Product
 ): Promise<Product> {
   const response = await fetch(
-    `${API_URL}/api/products/${product.id}`,
+    `/api/products/${product.id}`,
     {
       method: "PUT",
       headers: {
@@ -105,7 +104,7 @@ export async function updateProduct(
 
 // Eliminar un producto del inventario.
 export async function deleteProduct(id: number): Promise<Product> {
-  const response = await fetch(`${API_URL}/api/products/${id}`, {
+  const response = await fetch(`/api/products/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -138,7 +137,7 @@ export interface ImageOption {
 // Buscar 3 imágenes sugeridas según el nombre del producto.
 export async function searchImages(query: string): Promise<ImageOption[]> {
   const response = await fetch(
-    `${API_URL}/api/images/search?q=${encodeURIComponent(query)}`,
+    `/api/images/search?q=${encodeURIComponent(query)}`,
     { credentials: "include" }
   );
 
@@ -154,7 +153,7 @@ export async function searchImages(query: string): Promise<ImageOption[]> {
 // Avisar a Unsplash que se eligió una imagen (requisito de sus guías).
 export async function selectImage(downloadLocation: string): Promise<void> {
   try {
-    await fetch(`${API_URL}/api/images/select`, {
+    await fetch(`/api/images/select`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
