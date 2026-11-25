@@ -170,11 +170,20 @@ Desde la raíz del proyecto:
 
 ```bash
 cd ../backend
+npm install better-sqlite3@latest
 npm install
 npm install jsonwebtoken
 npm install -D @types/jsonwebtoken
+npm install cookie-parser
+npm install -D @types/cookie-parser
+npm install dotenv
 ```
+Crear el archivo `.env` dentro de `backend/`:
 
+```env
+JWT_SECRET=d4fe7e95f192d816408c820c7f14f28468aa15d7c11543166323040a838ba617
+UNSPLASH_ACCESS_KEY=N2jZdnElMYOBVev--pTBcFrpOzorOqmvX_HAcu9r_e8
+```
 ## 7. Ejecución del proyecto
 
 Se deben abrir dos terminales.
