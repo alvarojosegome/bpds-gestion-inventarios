@@ -269,5 +269,11 @@ Cada integrante trabaja en su propia rama y utiliza Pull Requests para proponer 
 
 ## 11. Equipo de desarrollo
 
-Proyecto desarrollado por estudiantes de Ingeniería de Sistemas de la Universidad de la Costa.
+Proyecto desarrollado por estudiantes de Ingeniería de Sistemas de la Universidad de la Costa.:
+```
+alvarojosegome - Alvaro Gomez 
+dtheranL       - Diego Lopez
+Carlos-lab-eng - Carlos Buelvas
+Siblaky        - Junior Roca 
+```
 
