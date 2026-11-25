@@ -28,14 +28,15 @@ export async function checkBackendConnection() {
 
 // Consultar productos.
 export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${API_URL}/api/products`);
+  const response = await fetch(`${API_URL}/api/products`, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
     throw new Error("No se pudieron consultar los productos");
   }
 
   const result = await response.json();
-
   return result.data;
 }
 
@@ -48,6 +49,7 @@ export async function createProduct(
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(product),
   });
 
@@ -56,7 +58,6 @@ export async function createProduct(
   }
 
   const result = await response.json();
-
   return result.data;
 }
 
@@ -71,6 +72,7 @@ export async function updateProduct(
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({
         name: product.name,
         description: product.description,
@@ -86,7 +88,6 @@ export async function updateProduct(
   }
 
   const result = await response.json();
-
   return result.data;
 }
 
@@ -94,6 +95,7 @@ export async function updateProduct(
 export async function deleteProduct(id: number): Promise<Product> {
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -101,6 +103,5 @@ export async function deleteProduct(id: number): Promise<Product> {
   }
 
   const result = await response.json();
-
   return result.data;
 }
