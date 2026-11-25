@@ -65,6 +65,8 @@ function getStockStatus(product: Product) {
 
 export default function Home() {
   const router = useRouter();
+  const [companyName, setCompanyName] = useState("Cargando empresa...");
+  const [username, setUsername] = useState("Cargando usuario...");
 
   const [message, setMessage] = useState("Comprobando conexión...");
   const [status, setStatus] = useState("loading");
@@ -124,28 +126,59 @@ export default function Home() {
     });
 
   useEffect(() => {
-    checkBackendConnection()
-      .then((data) => {
-        setMessage(data.message);
-        setStatus("connected");
-      })
-      .catch(() => {
-        setMessage("No fue posible conectar con el backend.");
-        setStatus("error");
-      });
+    async function loadDashboard() {
+      try {
+        // Verificar la sesión y obtener la empresa del usuario autenticado.
+        const sessionResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+          {
+            credentials: "include",
+          }
+        );
 
-    getProducts()
-      .then((data) => {
-        setProducts(data);
-      })
-      .catch(() => {
-        setMessage("No fue posible cargar los productos.");
+        if (sessionResponse.status === 401) {
+          router.replace("/login");
+          return;
+        }
+
+        if (!sessionResponse.ok) {
+          throw new Error("No se pudo consultar la sesión");
+        }
+
+        const account = await sessionResponse.json();
+
+        setCompanyName(account.company.nombre);
+        setUsername(account.user.usuario);
+
+        // Comprobar la conexión con el backend.
+        try {
+          const healthData = await checkBackendConnection();
+          setMessage(healthData.message);
+          setStatus("connected");
+        } catch {
+          setMessage("No fue posible conectar con el backend.");
+          setStatus("error");
+        }
+
+        // Cargar únicamente los productos de la empresa autenticada.
+        try {
+          const productData = await getProducts();
+          setProducts(productData);
+        } catch {
+          setMessage("No fue posible cargar los productos.");
+          setStatus("error");
+        }
+      } catch {
+        setMessage("No fue posible verificar la sesión.");
         setStatus("error");
-      })
-      .finally(() => {
+        router.replace("/login");
+      } finally {
         setLoadingProducts(false);
-      });
-  }, []);
+      }
+    }
+
+    loadDashboard();
+  }, [router]);
 
   async function handleLogout() {
     try {
@@ -330,8 +363,8 @@ export default function Home() {
           imageCredit: imageUrl ? imageCredit : undefined,
         });
 
-        setProducts((currentProducts) => [...currentProducts, newProduct]);
-
+        setProducts((currentProducts) => [newProduct, ...currentProducts]);
+        
         resetForm();
         setFormMessage("¡Producto registrado correctamente!");
       }
@@ -373,7 +406,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-extrabold">
-                MicroPyME Demo
+                {companyName}
               </p>
 
               <div className="mt-1 flex items-center justify-end gap-2">
@@ -383,10 +416,10 @@ export default function Home() {
 
                 <div>
                   <p className="text-xs font-bold text-white">
-                    Administrador
+                    {username}
                   </p>
                   <p className="text-xs text-blue-200">
-                    Administrador principal
+                    Administrador de empresa
                   </p>
                 </div>
               </div>
@@ -941,7 +974,7 @@ export default function Home() {
                               <button
                               type="button"
                               onClick={()=> handleViewDetails(product)}
-                              className="rounded-lg bg-blue-100 px-3 py-2 text-xs font-bolt text-blue-800 transition hover:bg-blue-200"
+                              className="rounded-lg bg-blue-100 px-3 py-2 text-xs font-bold text-blue-800 transition hover:bg-blue-200"
                               >
                                 👁 Ver
                               </button>

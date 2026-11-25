@@ -1,7 +1,11 @@
 
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import authRouter from "./auth.js";
+import { requireAuth } from "./authMiddleware.js";
+import db from "./database.js";
 
 
 // Cargar variables de entorno desde backend/.env (si existe).
@@ -14,11 +18,8 @@ try {
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// =====================================
-// CONFIGURACIÓN GENERAL
-// =====================================
-
 app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cookieParser());
 app.use(express.json({ limit: "2mb" })); // permite imágenes cargadas desde el PC
 app.use("/auth", authRouter);
 
@@ -29,7 +30,7 @@ app.use("/auth", authRouter);
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     status: "ok",
-    message: "API de gestión de inventarios y pedidos funcionando correctamente",
+    message: "API de gestión de inventarios y pedidos de MicroPyMEs funcionando correctamente",
   });
 });
 
@@ -53,20 +54,65 @@ interface ImageCredit {
   authorUrl: string;
 }
 
-const DEFAULT_MIN_STOCK = 5;
-
-function isLowStock(product: Product): boolean {
-  return product.stock <= product.minStock;
+interface ProductRow {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  minStock: number;
+  imageUrl: string | null;
+  imageCreditName: string | null;
+  imageCreditUrl: string | null;
 }
 
-// minStock es opcional; si viene, debe ser un entero >= 0.
+const DEFAULT_MIN_STOCK = 5;
+
 function isValidMinStock(value: unknown): boolean {
   return (
     value === undefined ||
-    (typeof value === "number" && Number.isInteger(value) && value >= 0)
+    (typeof value === "number" &&
+      Number.isInteger(value) &&
+      value >= 0)
   );
 }
 
+function getCompanyId(res: express.Response): number {
+  return (res.locals.auth as { companyId: number }).companyId;
+}
+
+const PRODUCT_COLUMNS = `
+  id, name, description, price, stock,
+  min_stock AS minStock,
+  image_url AS imageUrl,
+  image_credit_name AS imageCreditName,
+  image_credit_url AS imageCreditUrl
+`;
+
+function toProduct(row: ProductRow): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    price: row.price,
+    stock: row.stock,
+    minStock: row.minStock,
+    imageUrl: row.imageUrl ?? undefined,
+    imageCredit:
+      row.imageCreditName && row.imageCreditUrl
+        ? { authorName: row.imageCreditName, authorUrl: row.imageCreditUrl }
+        : undefined,
+  };
+}
+
+function getProductById(id: number, companyId: number): Product | undefined {
+  const row = db
+    .prepare(
+      `SELECT ${PRODUCT_COLUMNS} FROM products WHERE id = ? AND company_id = ?`
+    )
+    .get(id, companyId) as ProductRow | undefined;
+  return row ? toProduct(row) : undefined;
+}
 // imageUrl es opcional; si viene, debe ser una URL http(s) o una imagen subida (data:image/...).
 function isValidImageUrl(value: unknown): boolean {
   if (value === undefined || value === "") return true;
@@ -104,56 +150,47 @@ function buildImageCredit(
   return { authorName: authorName.trim(), authorUrl };
 }
 
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Laptop Lenovo",
-    description: "Laptop para uso empresarial",
-    price: 2500000,
-    stock: 10,
-    minStock: 3,
-  },
-  {
-    id: 2,
-    name: "Mouse inalámbrico",
-    description: "Mouse óptico inalámbrico",
-    price: 65000,
-    stock: 25,
-    minStock: 5,
-  },
-  {
-    id: 3,
-    name: "Teclado mecánico",
-    description: "Teclado mecánico para oficina",
-    price: 180000,
-    stock: 15,
-    minStock: 15, // para probar la alerta (stock <= minStock)
-  },
-];
+// Consultar todos los productos de la empresa autenticada.
+app.get("/api/products", requireAuth, (_req, res) => {
+  const companyId = getCompanyId(res);
 
-// Consultar todos los productos.
-app.get("/api/products", (_req, res) => {
-  res.status(200).json({
+  const rows = db
+    .prepare(
+      `SELECT ${PRODUCT_COLUMNS} FROM products WHERE company_id = ? ORDER BY id DESC`
+    )
+    .all(companyId) as ProductRow[];
+
+  return res.status(200).json({
     status: "ok",
     message: "Listado de productos",
-    data: products,
+    data: rows.map(toProduct),
   });
 });
 
-// Consultar productos.
-app.get("/api/products/low-stock", (_req, res) => {
-  res.status(200).json({
+// Consultar productos con stock bajo.
+app.get("/api/products/low-stock", requireAuth, (_req, res) => {
+  const companyId = getCompanyId(res);
+
+  const rows = db
+    .prepare(
+      `SELECT ${PRODUCT_COLUMNS} FROM products
+       WHERE company_id = ? AND stock <= min_stock
+       ORDER BY stock ASC`
+    )
+    .all(companyId) as ProductRow[];
+
+  return res.status(200).json({
     status: "ok",
     message: "Productos con stock bajo",
-    data: products.filter(isLowStock),
+    data: rows.map(toProduct),
   });
 });
 
-// Registrar un nuevo producto.
-app.post("/api/products", (req, res) => {
+// Registrar un producto para la empresa autenticada.
+app.post("/api/products", requireAuth, (req, res) => {
+  const companyId = getCompanyId(res);
   const { name, description, price, stock, minStock, imageUrl, imageCredit } =
-    req.body;
-
+    req.body ?? {};
   if (
     typeof name !== "string" ||
     !name.trim() ||
@@ -175,18 +212,32 @@ app.post("/api/products", (req, res) => {
     });
   }
 
-  const newProduct: Product = {
-    id: Math.max(0, ...products.map((product) => product.id)) + 1,
-    name: name.trim(),
-    description: description.trim(),
-    price,
-    stock,
-    minStock: minStock ?? DEFAULT_MIN_STOCK,
-    imageUrl: imageUrl || undefined,
-    imageCredit: buildImageCredit(imageUrl, imageCredit),
-  };
+  const credit = buildImageCredit(imageUrl, imageCredit);
 
-  products.push(newProduct);
+  const result = db
+    .prepare(`
+      INSERT INTO products (
+        company_id, name, description, price, stock, min_stock,
+        image_url, image_credit_name, image_credit_url
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .run(
+      companyId,
+      name.trim(),
+      description.trim(),
+      price,
+      stock,
+      minStock ?? DEFAULT_MIN_STOCK,
+      imageUrl || null,
+      credit?.authorName ?? null,
+      credit?.authorUrl ?? null
+    );
+
+  const newProduct = getProductById(
+    Number(result.lastInsertRowid),
+    companyId
+  );
 
   return res.status(201).json({
     status: "ok",
@@ -195,17 +246,23 @@ app.post("/api/products", (req, res) => {
   });
 });
 
-// Actualizar un producto existente.
-app.put("/api/products/:id", (req, res) => {
+// Actualizar un producto perteneciente a la empresa autenticada.
+app.put("/api/products/:id", requireAuth, (req, res) => {
+  const companyId = getCompanyId(res);
   const id = Number(req.params.id);
   const { name, description, price, stock, minStock, imageUrl, imageCredit } =
-    req.body;
+    req.body ?? {};
+  
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({
+      status: "error",
+      message: "El identificador del producto no es válido",
+    });
+  }
 
-  const productIndex = products.findIndex(
-    (product) => product.id === id
-  );
+  const existingProduct = getProductById(id, companyId);
 
-  if (productIndex === -1) {
+  if (!existingProduct) {
     return res.status(404).json({
       status: "error",
       message: "Producto no encontrado",
@@ -233,21 +290,29 @@ app.put("/api/products/:id", (req, res) => {
     });
   }
 
-  const updatedProduct: Product = {
-    id,
-    name: name.trim(),
-    description: description.trim(),
+    const credit =
+    imageUrl === undefined
+      ? existingProduct.imageCredit
+      : buildImageCredit(imageUrl, imageCredit);
+
+  db.prepare(`
+    UPDATE products
+    SET name = ?, description = ?, price = ?, stock = ?, min_stock = ?,
+        image_url = ?, image_credit_name = ?, image_credit_url = ?
+    WHERE id = ? AND company_id = ?
+  `).run(
+    name.trim(),
+    description.trim(),
     price,
     stock,
-    minStock: minStock ?? products[productIndex].minStock,
-    imageUrl: imageUrl ?? products[productIndex].imageUrl,
-    imageCredit:
-      imageUrl === undefined
-        ? products[productIndex].imageCredit
-        : buildImageCredit(imageUrl, imageCredit),
-  };
-
-  products[productIndex] = updatedProduct;
+    minStock ?? existingProduct.minStock,
+    imageUrl === undefined ? existingProduct.imageUrl ?? null : imageUrl || null,
+    credit?.authorName ?? null,
+    credit?.authorUrl ?? null,
+    id,
+    companyId
+  );
+  const updatedProduct = getProductById(id, companyId);
 
   return res.status(200).json({
     status: "ok",
@@ -255,27 +320,36 @@ app.put("/api/products/:id", (req, res) => {
     data: updatedProduct,
   });
 });
-// Eliminar un producto existente.
-app.delete("/api/products/:id", (req, res) => {
+
+// Eliminar únicamente productos de la empresa autenticada.
+app.delete("/api/products/:id", requireAuth, (req, res) => {
+  const companyId = getCompanyId(res);
   const id = Number(req.params.id);
 
-  const productIndex = products.findIndex(
-    (product) => product.id === id
-  );
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({
+      status: "error",
+      message: "El identificador del producto no es válido",
+    });
+  }
 
-  if (productIndex === -1) {
+  const existingProduct = getProductById(id, companyId);
+
+  if (!existingProduct) {
     return res.status(404).json({
       status: "error",
       message: "Producto no encontrado",
     });
   }
 
-  const deletedProduct = products.splice(productIndex, 1)[0];
+  db.prepare(
+    "DELETE FROM products WHERE id = ? AND company_id = ?"
+  ).run(id, companyId);
 
   return res.status(200).json({
     status: "ok",
     message: "Producto eliminado correctamente",
-    data: deletedProduct,
+    data: existingProduct,
   });
 });
 
@@ -302,7 +376,7 @@ function getUnsplashKey(): string | undefined {
 }
 
 // Buscar 3 imágenes sugeridas según el nombre del producto.
-app.get("/api/images/search", async (req, res) => {
+app.get("/api/images/search", requireAuth, async (req, res) => {
   const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const accessKey = getUnsplashKey();
 
@@ -368,7 +442,7 @@ app.get("/api/images/search", async (req, res) => {
 });
 
 // Notificar a Unsplash que se eligió una foto (requisito de sus guías).
-app.post("/api/images/select", async (req, res) => {
+app.post("/api/images/select", requireAuth, async (req, res) => {
   const { downloadLocation } = req.body;
   const accessKey = getUnsplashKey();
 

@@ -35,8 +35,10 @@ export async function checkBackendConnection() {
 
 // Consultar productos.
 export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${API_URL}/api/products`);
-
+  const response = await fetch(`${API_URL}/api/products`, {
+    credentials: "include",
+  });
+  
   if (!response.ok) {
     throw new Error("No se pudieron consultar los productos");
   }
@@ -55,6 +57,7 @@ export async function createProduct(
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(product),
   });
 
@@ -78,6 +81,7 @@ export async function updateProduct(
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({
         name: product.name,
         description: product.description,
@@ -103,6 +107,7 @@ export async function updateProduct(
 export async function deleteProduct(id: number): Promise<Product> {
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -133,7 +138,8 @@ export interface ImageOption {
 // Buscar 3 imágenes sugeridas según el nombre del producto.
 export async function searchImages(query: string): Promise<ImageOption[]> {
   const response = await fetch(
-    `${API_URL}/api/images/search?q=${encodeURIComponent(query)}`
+    `${API_URL}/api/images/search?q=${encodeURIComponent(query)}`,
+    { credentials: "include" }
   );
 
   if (!response.ok) {
@@ -153,10 +159,11 @@ export async function selectImage(downloadLocation: string): Promise<void> {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({ downloadLocation }),
     });
   } catch (error) {
     // No bloquea el registro del producto si falla el aviso.
     console.error("No se pudo registrar la selección de imagen:", error);
   }
-}
+}
